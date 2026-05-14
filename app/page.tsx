@@ -9,13 +9,18 @@ export default function Home() {
   const {
     selectedBook,
     filteredBooks,
+    selectedVoice,
+    voices,
+    isVoiceOpen,
     searchValue,
     isPlaying,
     currentTime,
     progressPercent,
     formattedCurrentTime,
     formattedDuration,
+    setIsVoiceOpen,
     setSearchValue,
+    selectVoice,
     selectBook,
     handleLoadedMetadata,
     handleTimeUpdate,
@@ -56,6 +61,14 @@ export default function Home() {
                 AI STORYTELLER
               </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsVoiceOpen(true)}
+              className="rounded-full border border-white/18 bg-black/36 px-4 py-2 text-[10px] font-bold tracking-[0.22em] text-orange-100 shadow-[0_0_28px_rgba(255,160,70,0.10)] backdrop-blur-xl active:scale-95"
+            >
+              VOICE
+            </button>
           </header>
 
           <div className="mt-2 shrink-0 md:hidden">
@@ -81,7 +94,7 @@ export default function Home() {
             </p>
 
             <p className="mt-0.5 text-[11px] text-white/56 md:text-base">
-              {selectedBook.source}
+              {selectedBook.source} · Voice: {selectedVoice.name}
             </p>
           </div>
 
@@ -247,6 +260,70 @@ export default function Home() {
           </div>
         </aside>
       </section>
+
+      {isVoiceOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/74 px-4 py-5 backdrop-blur-2xl">
+          <div className="mx-auto max-w-md rounded-[28px] border border-white/14 bg-black/70 p-4 shadow-[0_0_80px_rgba(255,150,70,0.20)]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold tracking-[0.28em] text-orange-100/72">
+                  SELECT VOICE
+                </p>
+
+                <h2 className="mt-1 text-2xl font-black text-white">
+                  Narrator Voice
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsVoiceOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-white/10 text-2xl text-white active:scale-95"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-2">
+              {voices.map((voice) => (
+                <button
+                  key={voice.id}
+                  type="button"
+                  onClick={() => selectVoice(voice.id)}
+                  className={`rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
+                    selectedVoice.id === voice.id
+                      ? "border-orange-200/60 bg-orange-200/14"
+                      : "border-white/10 bg-white/7"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-base font-black text-white">
+                        {voice.name}
+                      </p>
+
+                      <p className="mt-1 text-xs text-white/55">
+                        {voice.gender} American Narrator
+                      </p>
+                    </div>
+
+                    {selectedVoice.id === voice.id && (
+                      <p className="text-xs font-bold tracking-[0.18em] text-orange-200">
+                        ACTIVE
+                      </p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-4 text-xs leading-5 text-white/45">
+              Voice selection is saved. Real voice generation will be connected
+              later through a free or open-source TTS engine.
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
