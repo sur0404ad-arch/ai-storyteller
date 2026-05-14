@@ -10,6 +10,7 @@ export default function Home() {
     selectedBook,
     filteredBooks,
     selectedVoice,
+    voiceAudio,
     voices,
     isVoiceOpen,
     searchValue,
@@ -51,12 +52,11 @@ export default function Home() {
       <div className="absolute inset-0 bg-[url('/bg-main.png')] bg-cover bg-center brightness-[1.25] contrast-[1.08] saturate-[1.12] md:bg-[url('/bg-desktop.png')]" />
       <div className="absolute inset-0 bg-black/18" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-black/0" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_72%,rgba(255,145,55,0.22),transparent_34%),radial-gradient(circle_at_82%_22%,rgba(255,190,105,0.14),transparent_30%)]" />
 
       <section className="relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col px-4 pb-2 pt-2 md:grid md:grid-cols-[1fr_430px] md:gap-10 md:px-10 md:py-7">
         <div className="flex h-full min-h-0 flex-col">
           <header className="flex shrink-0 items-center justify-between">
-            <div className="rounded-full border border-white/20 bg-black/34 px-4 py-2 shadow-[0_0_30px_rgba(255,160,70,0.10)] backdrop-blur-xl">
+            <div className="rounded-full border border-white/20 bg-black/34 px-4 py-2 backdrop-blur-xl">
               <p className="text-[10px] font-bold tracking-[0.28em] text-white">
                 AI STORYTELLER
               </p>
@@ -65,40 +65,36 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setIsVoiceOpen(true)}
-              className="rounded-full border border-white/18 bg-black/36 px-4 py-2 text-[10px] font-bold tracking-[0.22em] text-orange-100 shadow-[0_0_28px_rgba(255,160,70,0.10)] backdrop-blur-xl active:scale-95"
+              className="rounded-full border border-white/18 bg-black/36 px-4 py-2 text-[10px] font-bold tracking-[0.22em] text-orange-100 backdrop-blur-xl active:scale-95"
             >
               VOICE
             </button>
           </header>
 
           <div className="mt-2 shrink-0 md:hidden">
-            <p className="mb-1 text-[10px] font-bold tracking-[0.28em] text-white/65">
-              SEARCH LIBRARY
-            </p>
-
             <input
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="Search books"
-              className="h-9 w-full rounded-full border border-white/20 bg-black/34 px-5 text-sm text-white outline-none shadow-[0_0_34px_rgba(255,170,80,0.08)] backdrop-blur-xl placeholder:text-white/48"
+              className="h-9 w-full rounded-full border border-white/20 bg-black/34 px-5 text-sm text-white outline-none backdrop-blur-xl placeholder:text-white/48"
             />
           </div>
 
           <div className="mt-2 shrink-0 md:mt-8">
-            <h1 className="max-w-[300px] text-[25px] font-black leading-[0.92] tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.75)] md:max-w-[760px] md:text-[72px]">
+            <h1 className="max-w-[300px] text-[25px] font-black leading-[0.92] tracking-tight md:max-w-[760px] md:text-[72px]">
               {selectedBook.title}
             </h1>
 
-            <p className="mt-1 text-[13px] text-white/82 drop-shadow md:mt-4 md:text-2xl">
+            <p className="mt-1 text-[13px] text-white/82 md:mt-4 md:text-2xl">
               {selectedBook.author}
             </p>
 
             <p className="mt-0.5 text-[11px] text-white/56 md:text-base">
-              {selectedBook.source} · Voice: {selectedVoice.name}
+              Voice: {selectedVoice.name}
             </p>
           </div>
 
-          <section className="mt-2 shrink-0 rounded-[22px] border border-white/14 bg-black/34 p-3 shadow-[0_0_70px_rgba(255,135,45,0.18)] backdrop-blur-xl md:mt-7 md:max-w-3xl md:rounded-[34px] md:p-6">
+          <section className="mt-2 shrink-0 rounded-[22px] border border-white/14 bg-black/34 p-3 backdrop-blur-xl md:mt-7 md:max-w-3xl md:rounded-[34px] md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] font-bold tracking-[0.28em] text-orange-100/78">
@@ -113,20 +109,12 @@ export default function Home() {
                   {selectedBook.subtitle}
                 </p>
               </div>
-
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-200/14 shadow-[0_0_38px_rgba(255,150,65,0.28)] md:h-16 md:w-16">
-                <div
-                  className={`h-2.5 w-2.5 rounded-full bg-orange-300 shadow-[0_0_22px_rgba(255,170,80,1)] md:h-4 md:w-4 ${
-                    isPlaying ? "animate-pulse" : ""
-                  }`}
-                />
-              </div>
             </div>
 
-            <div className="mt-2 rounded-full bg-white/95 px-2 py-1 shadow-[0_10px_36px_rgba(0,0,0,0.35)] md:mt-5 md:px-3 md:py-3">
+            <div className="mt-2 rounded-full bg-white/95 px-2 py-1 md:mt-5 md:px-3 md:py-3">
               <audio
                 ref={audioRef}
-                key={selectedBook.id}
+                key={`${selectedBook.id}-${selectedVoice.id}`}
                 controls
                 playsInline
                 preload="auto"
@@ -148,18 +136,18 @@ export default function Home() {
                 onPause={handlePause}
                 onEnded={handleEnded}
               >
-                <source src={selectedBook.audio} type="audio/mpeg" />
+                <source src={voiceAudio} type="audio/mpeg" />
               </audio>
             </div>
 
-            <div className="mt-2 h-[2px] overflow-hidden rounded-full bg-white/14 md:mt-4">
+            <div className="mt-2 h-[2px] overflow-hidden rounded-full bg-white/14">
               <div
-                className="h-full rounded-full bg-orange-300 shadow-[0_0_14px_rgba(255,170,80,1)] transition-all duration-300"
+                className="h-full rounded-full bg-orange-300 transition-all duration-300"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
 
-            <div className="mt-2 flex items-center justify-between text-[11px] text-white/72 md:mt-4 md:text-base">
+            <div className="mt-2 flex items-center justify-between text-[11px] text-white/72">
               <span>{isPlaying ? "Now Playing" : "Continue Listening"}</span>
 
               <span>
@@ -168,7 +156,7 @@ export default function Home() {
             </div>
 
             <div className="mt-2 h-[72px] overflow-hidden rounded-[16px] border border-white/10 bg-black/18 p-2.5 backdrop-blur-xl">
-              <div className="space-y-0.5 transition-all duration-500">
+              <div className="space-y-0.5">
                 <p className="text-[13px] leading-5 text-white">
                   {captions[captionIndex]}
                 </p>
@@ -185,21 +173,13 @@ export default function Home() {
           </section>
 
           <section className="mt-2 min-h-0 shrink-0 md:hidden">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold tracking-[0.28em] text-white/62">
-                LIBRARY
-              </p>
-
-              <p className="text-xs text-white/48">Ready</p>
-            </div>
-
             <div className="mt-1.5 flex gap-3 overflow-x-auto pb-1">
               {filteredBooks.map((book) => (
                 <button
                   key={book.id}
                   type="button"
                   onClick={() => selectBook(book)}
-                  className={`min-w-[116px] rounded-[16px] border p-2.5 text-left shadow-[0_0_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition active:scale-95 ${
+                  className={`min-w-[116px] rounded-[16px] border p-2.5 text-left backdrop-blur-xl transition active:scale-95 ${
                     selectedBook.id === book.id
                       ? "border-orange-200/55 bg-white/16"
                       : "border-white/12 bg-black/30"
@@ -218,112 +198,65 @@ export default function Home() {
           </section>
         </div>
 
-        <aside className="hidden min-h-0 flex-col md:flex">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-bold tracking-[0.28em] text-white/55">
-              LIBRARY
-            </p>
+        {isVoiceOpen && (
+          <div className="fixed inset-0 z-[9999] bg-black/74 px-4 py-5 backdrop-blur-2xl">
+            <div className="mx-auto max-w-md rounded-[28px] border border-white/14 bg-black/70 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.28em] text-orange-100/72">
+                    SELECT VOICE
+                  </p>
 
-            <div className="w-[280px]">
-              <input
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                placeholder="Search books"
-                className="h-14 w-full rounded-full border border-white/15 bg-black/42 px-6 text-sm text-white outline-none backdrop-blur-xl placeholder:text-white/40"
-              />
-            </div>
-          </div>
+                  <h2 className="mt-1 text-2xl font-black text-white">
+                    Narrator Voice
+                  </h2>
+                </div>
 
-          <div className="mt-5 grid gap-4">
-            {filteredBooks.map((book) => (
-              <button
-                key={book.id}
-                type="button"
-                onClick={() => selectBook(book)}
-                className={`rounded-[28px] border p-5 text-left backdrop-blur-xl transition active:scale-[0.98] ${
-                  selectedBook.id === book.id
-                    ? "border-orange-200/45 bg-white/14"
-                    : "border-white/10 bg-black/34"
-                }`}
-              >
-                <h3 className="text-2xl font-black leading-tight text-white">
-                  {book.title}
-                </h3>
-
-                <p className="mt-2 text-base text-white/55">{book.author}</p>
-
-                <p className="mt-4 text-xs text-orange-100/55">
-                  Public domain
-                </p>
-              </button>
-            ))}
-          </div>
-        </aside>
-      </section>
-
-      {isVoiceOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/74 px-4 py-5 backdrop-blur-2xl">
-          <div className="mx-auto max-w-md rounded-[28px] border border-white/14 bg-black/70 p-4 shadow-[0_0_80px_rgba(255,150,70,0.20)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold tracking-[0.28em] text-orange-100/72">
-                  SELECT VOICE
-                </p>
-
-                <h2 className="mt-1 text-2xl font-black text-white">
-                  Narrator Voice
-                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsVoiceOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-white/10 text-2xl text-white"
+                >
+                  ×
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsVoiceOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-white/10 text-2xl text-white active:scale-95"
-              >
-                ×
-              </button>
-            </div>
+              <div className="mt-4 grid grid-cols-1 gap-2">
+                {voices.map((voice) => (
+                  <button
+                    key={voice.id}
+                    type="button"
+                    onClick={() => selectVoice(voice.id)}
+                    className={`rounded-2xl border px-4 py-3 text-left ${
+                      selectedVoice.id === voice.id
+                        ? "border-orange-200/60 bg-orange-200/14"
+                        : "border-white/10 bg-white/7"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-base font-black text-white">
+                          {voice.name}
+                        </p>
 
-            <div className="mt-4 grid grid-cols-1 gap-2">
-              {voices.map((voice) => (
-                <button
-                  key={voice.id}
-                  type="button"
-                  onClick={() => selectVoice(voice.id)}
-                  className={`rounded-2xl border px-4 py-3 text-left transition active:scale-[0.98] ${
-                    selectedVoice.id === voice.id
-                      ? "border-orange-200/60 bg-orange-200/14"
-                      : "border-white/10 bg-white/7"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-base font-black text-white">
-                        {voice.name}
-                      </p>
+                        <p className="mt-1 text-xs text-white/55">
+                          {voice.gender} American Narrator
+                        </p>
+                      </div>
 
-                      <p className="mt-1 text-xs text-white/55">
-                        {voice.gender} American Narrator
-                      </p>
+                      {selectedVoice.id === voice.id && (
+                        <p className="text-xs font-bold tracking-[0.18em] text-orange-200">
+                          ACTIVE
+                        </p>
+                      )}
                     </div>
-
-                    {selectedVoice.id === voice.id && (
-                      <p className="text-xs font-bold tracking-[0.18em] text-orange-200">
-                        ACTIVE
-                      </p>
-                    )}
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
-
-            <p className="mt-4 text-xs leading-5 text-white/45">
-              Voice selection is saved. Real voice generation will be connected
-              later through a free or open-source TTS engine.
-            </p>
           </div>
-        </div>
-      )}
+        )}
+      </section>
     </main>
   );
 }
