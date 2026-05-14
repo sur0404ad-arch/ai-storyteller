@@ -32,7 +32,7 @@ export default function Home() {
     if (audioElement.duration && currentTime >= audioElement.duration) return;
 
     audioElement.currentTime = currentTime;
-  }, [selectedBook.id]);
+  }, [selectedBook.id, currentTime]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
@@ -41,7 +41,7 @@ export default function Home() {
       <div className="absolute inset-0 bg-gradient-to-t from-black/62 via-black/14 to-black/0" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_72%,rgba(255,145,55,0.24),transparent_34%),radial-gradient(circle_at_82%_22%,rgba(255,190,105,0.16),transparent_30%)]" />
 
-      <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-4 pt-4 md:grid md:grid-cols-[1fr_430px] md:gap-10 md:px-10 md:py-7">
+      <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-32 pt-4 md:grid md:grid-cols-[1fr_430px] md:gap-10 md:px-10 md:py-7">
         <div className="flex min-h-0 flex-col">
           <header className="flex items-center justify-between">
             <div className="rounded-full border border-white/20 bg-black/34 px-4 py-2 shadow-[0_0_30px_rgba(255,160,70,0.10)] backdrop-blur-xl">
@@ -60,12 +60,12 @@ export default function Home() {
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="Search books"
-              className="h-12 w-full rounded-full border border-white/20 bg-black/36 px-5 text-sm text-white outline-none shadow-[0_0_34px_rgba(255,170,80,0.08)] backdrop-blur-xl placeholder:text-white/48"
+              className="h-11 w-full rounded-full border border-white/20 bg-black/36 px-5 text-sm text-white outline-none shadow-[0_0_34px_rgba(255,170,80,0.08)] backdrop-blur-xl placeholder:text-white/48"
             />
           </div>
 
           <div className="mt-4 md:mt-8">
-            <h1 className="max-w-[270px] text-[33px] font-black leading-[0.9] tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.75)] md:max-w-[760px] md:text-[72px]">
+            <h1 className="max-w-[270px] text-[31px] font-black leading-[0.9] tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.75)] md:max-w-[760px] md:text-[72px]">
               {selectedBook.title}
             </h1>
 
@@ -151,7 +151,7 @@ export default function Home() {
             </p>
           </section>
 
-          <section className="mt-3 min-h-0 md:hidden">
+          <section className="mt-5 min-h-0 pb-28 md:hidden">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-bold tracking-[0.28em] text-white/62">
                 LIBRARY
@@ -227,6 +227,39 @@ export default function Home() {
           </div>
         </aside>
       </section>
+
+      <div className="fixed bottom-3 left-3 right-3 z-50 rounded-[24px] border border-white/14 bg-black/52 px-4 py-3 shadow-[0_0_40px_rgba(255,140,60,0.22)] backdrop-blur-2xl md:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black text-white">
+              {selectedBook.title}
+            </p>
+
+            <p className="truncate text-xs text-white/58">
+              {formattedCurrentTime} / {formattedDuration}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div
+              className={`h-2.5 w-2.5 rounded-full bg-orange-300 shadow-[0_0_16px_rgba(255,170,80,1)] ${
+                isPlaying ? "animate-pulse" : ""
+              }`}
+            />
+
+            <div className="text-xs font-semibold text-white/70">
+              {isPlaying ? "Playing" : "Paused"}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 h-[2px] overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-orange-300 transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
     </main>
   );
 }
