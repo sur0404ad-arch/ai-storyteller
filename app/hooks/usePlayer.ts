@@ -344,25 +344,25 @@ export function usePlayer() {
     isVoiceOpen,
     isSearchOpen,
     searchValue,
-    isPlaying,
-    currentTime,
-    duration,
-    progressPercent,
-    formattedCurrentTime:
-      formatTime(currentTime),
-    formattedDuration:
-      formatTime(duration),
-    voiceAudio:
-     selectedBook.audio,
-    setIsVoiceOpen,
-    setIsSearchOpen,
-    setSearchValue,
-    selectVoice,
-    selectBook,
-    handleLoadedMetadata,
-    handleTimeUpdate,
-    handlePlay,
-    handlePause,
-    handleEnded,
+   isPlaying,
+currentTime,
+duration,
+progressPercent,
+formattedCurrentTime:
+  formatTime(currentTime),
+formattedDuration:
+  formatTime(duration),
+voiceAudio:
+  selectedBook.audio,
+setIsVoiceOpen,
+setIsSearchOpen,
+setSearchValue,
+selectVoice,
+selectBook,
+handleLoadedMetadata,
+handleTimeUpdate,
+handlePlay,
+handlePause,
+handleEnded,
   };
 }
