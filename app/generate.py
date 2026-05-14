@@ -3,31 +3,52 @@ import soundfile as sf
 
 pipeline = KPipeline(lang_code="a")
 
-TEXT = """
-Welcome to AI Storyteller.
-This is a real American AI narrator voice.
-Today we are testing different voices for audiobook listening.
-"""
+BOOKS = [
+    {
+        "file": "sherlock.mp3",
+        "voice": "am_adam",
+        "text": """
+        To Sherlock Holmes she is always the woman.
+        I have seldom heard him mention her under any other name.
+        In his eyes she eclipses and predominates the whole of her sex.
+        """,
+    },
 
-VOICES = [
-    ("am_adam", "voice-michael.mp3"),
-    ("am_michael", "voice-james.mp3"),
-    ("am_echo", "voice-robert.mp3"),
-    ("af_bella", "voice-emma.mp3"),
-    ("af_sarah", "voice-olivia.mp3"),
-    ("af_nicole", "voice-sophia.mp3"),
+    {
+        "file": "dracula.mp3",
+        "voice": "am_michael",
+        "text": """
+        Left Munich at 8:35 P.M. on 1st May.
+        Arriving at Vienna early next morning.
+        Buda-Pesth seems a wonderful place.
+        """,
+    },
+
+    {
+        "file": "pride.mp3",
+        "voice": "af_bella",
+        "text": """
+        It is a truth universally acknowledged,
+        that a single man in possession of a good fortune,
+        must be in want of a wife.
+        """,
+    },
 ]
 
-for voice_id, file_name in VOICES:
+for book in BOOKS:
     generator = pipeline(
-        TEXT,
-        voice=voice_id,
+        book["text"],
+        voice=book["voice"],
         speed=1,
     )
 
     for _, _, audio in generator:
-        sf.write(f"public/{file_name}", audio, 24000)
+        sf.write(
+            f'public/{book["file"]}',
+            audio,
+            24000
+        )
 
-    print(f"DONE: {file_name}")
+    print(f'DONE: {book["file"]}')
 
-print("ALL VOICES READY")
+print("ALL BOOKS READY")
