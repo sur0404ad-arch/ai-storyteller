@@ -14,15 +14,16 @@ export type PlayerBook = {
   audio: string;
 };
 
-const STORAGE_KEY = "ai-storyteller-player";
+const STORAGE_KEY = "ai-storyteller-book-sessions";
+const LAST_BOOK_KEY = "ai-storyteller-last-book";
 
-type SavedProgress = {
-  [bookId: number]: {
-    chapterId: number;
-    currentTime: number;
-    duration: number;
-  };
+type BookProgress = {
+  chapterId: number;
+  currentTime: number;
+  duration: number;
 };
+
+type SavedSessions = Record<number, BookProgress>;
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
@@ -35,6 +36,7 @@ function formatTime(seconds: number) {
 
 function getPlayerBook(bookId: number, chapterId: number): PlayerBook {
   const book = BOOKS.find((item) => item.id === bookId) ?? BOOKS[0];
+
   const chapter =
     book.chapters.find((item) => item.id === chapterId) ?? book.chapters[0];
 
@@ -59,12 +61,13 @@ export function usePlayer() {
   const [selectedChapterId, setSelectedChapterId] = useState(
     BOOKS[0].chapters[0].id
   );
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [savedProgress, setSavedProgress] = useState<SavedProgress>({});
+  const [sessions, setSessions] = useState<SavedSessions>({});
   const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
 
   const books = useMemo(() => getAllPlayerBooks(), []);
@@ -76,27 +79,31 @@ export function usePlayer() {
 
   useEffect(() => {
     try {
-      const storedValue = window.localStorage.getItem(STORAGE_KEY);
+      const storedSessions = window.localStorage.getItem(STORAGE_KEY);
+      const storedLastBook = window.localStorage.getItem(LAST_BOOK_KEY);
 
-      if (!storedValue) {
-        setHasLoadedStorage(true);
-        return;
-      }
+      const parsedSessions = storedSessions
+        ? (JSON.parse(storedSessions) as SavedSessions)
+        : {};
 
-      const parsedValue = JSON.parse(storedValue) as SavedProgress;
-      setSavedProgress(parsedValue);
+      const lastBookId = storedLastBook
+        ? Number(storedLastBook)
+        : BOOKS[0].id;
 
-      const lastBookId = Number(
-        window.localStorage.getItem(`${STORAGE_KEY}-last-book`) ?? BOOKS[0].id
-      );
+      const safeBook = BOOKS.find((book) => book.id === lastBookId) ?? BOOKS[0];
+      const savedProgress = parsedSessions[safeBook.id];
 
-      const lastProgress = parsedValue[lastBookId];
+      setSessions(parsedSessions);
+      setSelectedBookId(safeBook.id);
 
-      if (lastProgress) {
-        setSelectedBookId(lastBookId);
-        setSelectedChapterId(lastProgress.chapterId);
-        setCurrentTime(lastProgress.currentTime);
-        setDuration(lastProgress.duration);
+      if (savedProgress) {
+        setSelectedChapterId(savedProgress.chapterId);
+        setCurrentTime(savedProgress.currentTime);
+        setDuration(savedProgress.duration);
+      } else {
+        setSelectedChapterId(safeBook.chapters[0].id);
+        setCurrentTime(0);
+        setDuration(0);
       }
 
       setHasLoadedStorage(true);
@@ -108,8 +115,8 @@ export function usePlayer() {
   useEffect(() => {
     if (!hasLoadedStorage) return;
 
-    const updatedProgress: SavedProgress = {
-      ...savedProgress,
+    const updatedSessions: SavedSessions = {
+      ...sessions,
       [selectedBookId]: {
         chapterId: selectedChapterId,
         currentTime,
@@ -117,13 +124,10 @@ export function usePlayer() {
       },
     };
 
-    setSavedProgress(updatedProgress);
+    setSessions(updatedSessions);
 
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProgress));
-    window.localStorage.setItem(
-      `${STORAGE_KEY}-last-book`,
-      String(selectedBookId)
-    );
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSessions));
+    window.localStorage.setItem(LAST_BOOK_KEY, String(selectedBookId));
   }, [
     selectedBookId,
     selectedChapterId,
@@ -149,23 +153,23 @@ export function usePlayer() {
 
   function selectBook(book: PlayerBook) {
     const originalBook = BOOKS.find((item) => item.id === book.id) ?? BOOKS[0];
-    const existingProgress = savedProgress[originalBook.id];
+    const savedProgress = sessions[originalBook.id];
 
     setSelectedBookId(originalBook.id);
-
-    if (existingProgress) {
-      setSelectedChapterId(existingProgress.chapterId);
-      setCurrentTime(existingProgress.currentTime);
-      setDuration(existingProgress.duration);
-    } else {
-      setSelectedChapterId(originalBook.chapters[0].id);
-      setCurrentTime(0);
-      setDuration(0);
-    }
-
+    setIsPlaying(false);
     setIsSearchOpen(false);
     setSearchValue("");
-    setIsPlaying(false);
+
+    if (savedProgress) {
+      setSelectedChapterId(savedProgress.chapterId);
+      setCurrentTime(savedProgress.currentTime);
+      setDuration(savedProgress.duration);
+      return;
+    }
+
+    setSelectedChapterId(originalBook.chapters[0].id);
+    setCurrentTime(0);
+    setDuration(0);
   }
 
   function handleLoadedMetadata(durationValue: number) {
