@@ -353,7 +353,7 @@ export function usePlayer() {
     formattedDuration:
       formatTime(duration),
     voiceAudio:
-      selectedVoice.audio,
+     selectedBook.audio,
     setIsVoiceOpen,
     setIsSearchOpen,
     setSearchValue,
