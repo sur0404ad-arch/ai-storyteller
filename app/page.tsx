@@ -42,21 +42,18 @@ export default function Home() {
     if (audioElement.duration && currentTime >= audioElement.duration) return;
 
     audioElement.currentTime = currentTime;
-  }, [selectedBook.id, currentTime]);
+  }, [selectedBook.id]);
 
   const captionIndex = Math.floor(currentTime / 2) % CAPTIONS.length;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      <div className="absolute inset-0 bg-[url('/bg-main.png')] bg-cover bg-center brightness-[1.28] contrast-[1.08] saturate-[1.14] md:bg-[url('/bg-desktop.png')]" />
-
+    <main className="relative h-[100svh] overflow-hidden bg-black text-white">
+      <div className="absolute inset-0 bg-[url('/bg-main.png')] bg-cover bg-center brightness-[1.25] contrast-[1.08] saturate-[1.12] md:bg-[url('/bg-desktop.png')]" />
       <div className="absolute inset-0 bg-black/18" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-black/0" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_72%,rgba(255,145,55,0.22),transparent_34%),radial-gradient(circle_at_82%_22%,rgba(255,190,105,0.14),transparent_30%)]" />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/62 via-black/14 to-black/0" />
-
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_72%,rgba(255,145,55,0.24),transparent_34%),radial-gradient(circle_at_82%_22%,rgba(255,190,105,0.16),transparent_30%)]" />
-
-      <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-14 pt-4 md:grid md:grid-cols-[1fr_430px] md:gap-10 md:px-10 md:py-7">
+      <section className="relative z-10 mx-auto flex h-[100svh] w-full max-w-7xl flex-col px-4 pb-3 pt-3 md:grid md:grid-cols-[1fr_430px] md:gap-10 md:px-10 md:py-7">
         <div className="flex min-h-0 flex-col">
           <header className="flex items-center justify-between">
             <div className="rounded-full border border-white/20 bg-black/34 px-4 py-2 shadow-[0_0_30px_rgba(255,160,70,0.10)] backdrop-blur-xl">
@@ -66,7 +63,7 @@ export default function Home() {
             </div>
           </header>
 
-          <div className="mt-4 md:hidden">
+          <div className="mt-3 md:hidden">
             <p className="mb-2 text-[10px] font-bold tracking-[0.28em] text-white/65">
               SEARCH LIBRARY
             </p>
@@ -75,41 +72,41 @@ export default function Home() {
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="Search books"
-              className="h-11 w-full rounded-full border border-white/20 bg-black/36 px-5 text-sm text-white outline-none shadow-[0_0_34px_rgba(255,170,80,0.08)] backdrop-blur-xl placeholder:text-white/48"
+              className="h-10 w-full rounded-full border border-white/20 bg-black/34 px-5 text-sm text-white outline-none shadow-[0_0_34px_rgba(255,170,80,0.08)] backdrop-blur-xl placeholder:text-white/48"
             />
           </div>
 
-          <div className="mt-4 md:mt-8">
-            <h1 className="max-w-[270px] text-[31px] font-black leading-[0.9] tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.75)] md:max-w-[760px] md:text-[72px]">
+          <div className="mt-3 md:mt-8">
+            <h1 className="max-w-[300px] text-[28px] font-black leading-[0.92] tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.75)] md:max-w-[760px] md:text-[72px]">
               {selectedBook.title}
             </h1>
 
-            <p className="mt-2 text-base text-white/82 drop-shadow md:mt-4 md:text-2xl">
+            <p className="mt-1 text-sm text-white/82 drop-shadow md:mt-4 md:text-2xl">
               {selectedBook.author}
             </p>
 
-            <p className="mt-1 text-xs text-white/56 md:text-base">
+            <p className="mt-0.5 text-xs text-white/56 md:text-base">
               {selectedBook.source}
             </p>
           </div>
 
-          <section className="mt-3 rounded-[26px] border border-white/14 bg-black/38 p-4 shadow-[0_0_70px_rgba(255,135,45,0.20)] backdrop-blur-xl md:mt-7 md:max-w-3xl md:rounded-[34px] md:p-6">
+          <section className="mt-3 rounded-[24px] border border-white/14 bg-black/36 p-3 shadow-[0_0_70px_rgba(255,135,45,0.18)] backdrop-blur-xl md:mt-7 md:max-w-3xl md:rounded-[34px] md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] font-bold tracking-[0.28em] text-orange-100/78">
                   NOW PLAYING
                 </p>
 
-                <h2 className="mt-2 text-2xl font-black leading-tight md:mt-3 md:text-4xl">
+                <h2 className="mt-1.5 text-[25px] font-black leading-tight md:mt-3 md:text-4xl">
                   {selectedBook.chapter}
                 </h2>
 
-                <p className="mt-1 text-sm text-white/68 md:text-xl">
+                <p className="mt-0.5 text-sm text-white/68 md:text-xl">
                   {selectedBook.subtitle}
                 </p>
               </div>
 
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-200/14 shadow-[0_0_38px_rgba(255,150,65,0.28)] md:h-16 md:w-16">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange-200/14 shadow-[0_0_38px_rgba(255,150,65,0.28)] md:h-16 md:w-16">
                 <div
                   className={`h-3 w-3 rounded-full bg-orange-300 shadow-[0_0_22px_rgba(255,170,80,1)] md:h-4 md:w-4 ${
                     isPlaying ? "animate-pulse" : ""
@@ -118,14 +115,14 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-full bg-white/95 px-2 py-2 shadow-[0_10px_36px_rgba(0,0,0,0.35)] md:mt-5 md:px-3 md:py-3">
+            <div className="mt-3 rounded-full bg-white/95 px-2 py-1.5 shadow-[0_10px_36px_rgba(0,0,0,0.35)] md:mt-5 md:px-3 md:py-3">
               <audio
                 ref={audioRef}
                 key={selectedBook.id}
                 controls
                 playsInline
                 preload="auto"
-                className="w-full"
+                className="h-10 w-full"
                 onLoadedMetadata={(event) => {
                   handleLoadedMetadata(event.currentTarget.duration);
 
@@ -147,14 +144,14 @@ export default function Home() {
               </audio>
             </div>
 
-            <div className="mt-3 h-[2px] overflow-hidden rounded-full bg-white/14 md:mt-4">
+            <div className="mt-2.5 h-[2px] overflow-hidden rounded-full bg-white/14 md:mt-4">
               <div
                 className="h-full rounded-full bg-orange-300 shadow-[0_0_14px_rgba(255,170,80,1)] transition-all duration-300"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
 
-            <div className="mt-3 flex items-center justify-between text-xs text-white/72 md:mt-4 md:text-base">
+            <div className="mt-2.5 flex items-center justify-between text-xs text-white/72 md:mt-4 md:text-base">
               <span>{isPlaying ? "Now Playing" : "Continue Listening"}</span>
 
               <span>
@@ -162,28 +159,28 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="mt-5 min-h-[96px] overflow-hidden rounded-[18px] border border-white/10 bg-black/22 p-4 backdrop-blur-xl">
+            <div className="mt-3 h-[112px] overflow-hidden rounded-[18px] border border-white/10 bg-black/22 p-3 backdrop-blur-xl">
               <div className="space-y-1 transition-all duration-500">
-                <p className="text-[15px] leading-7 text-white">
+                <p className="text-[14px] leading-6 text-white">
                   {CAPTIONS[captionIndex]}
                 </p>
 
-                <p className="text-[15px] leading-7 text-white/72">
+                <p className="text-[14px] leading-6 text-white/70">
                   {CAPTIONS[(captionIndex + 1) % CAPTIONS.length]}
                 </p>
 
-                <p className="text-[15px] leading-7 text-white/52">
+                <p className="text-[14px] leading-6 text-white/48">
                   {CAPTIONS[(captionIndex + 2) % CAPTIONS.length]}
                 </p>
 
-                <p className="text-[15px] leading-7 text-white/34">
+                <p className="text-[14px] leading-6 text-white/28">
                   {CAPTIONS[(captionIndex + 3) % CAPTIONS.length]}
                 </p>
               </div>
             </div>
           </section>
 
-          <section className="mt-5 min-h-0 md:hidden">
+          <section className="mt-3 min-h-0 md:hidden">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-bold tracking-[0.28em] text-white/62">
                 LIBRARY
@@ -192,19 +189,19 @@ export default function Home() {
               <p className="text-xs text-white/48">Ready</p>
             </div>
 
-            <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+            <div className="mt-2 flex gap-3 overflow-x-auto pb-1">
               {filteredBooks.map((book) => (
                 <button
                   key={book.id}
                   type="button"
                   onClick={() => selectBook(book)}
-                  className={`min-w-[130px] rounded-[20px] border p-3 text-left shadow-[0_0_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition active:scale-95 ${
+                  className={`min-w-[122px] rounded-[18px] border p-3 text-left shadow-[0_0_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition active:scale-95 ${
                     selectedBook.id === book.id
                       ? "border-orange-200/55 bg-white/16"
                       : "border-white/12 bg-black/30"
                   }`}
                 >
-                  <h3 className="line-clamp-2 text-lg font-black leading-tight">
+                  <h3 className="line-clamp-2 text-base font-black leading-tight">
                     {book.title}
                   </h3>
 
