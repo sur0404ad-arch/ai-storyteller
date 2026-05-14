@@ -3,6 +3,16 @@
 import { useEffect, useRef } from "react";
 import { usePlayer } from "./hooks/usePlayer";
 
+const CAPTIONS = [
+  "To Sherlock Holmes she is always THE woman.",
+  "I have seldom heard him mention her",
+  "under any other name.",
+  "In his eyes she eclipses and predominates",
+  "the whole of her sex.",
+  "It was not that he felt any emotion",
+  "akin to love for Irene Adler.",
+];
+
 export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -34,14 +44,19 @@ export default function Home() {
     audioElement.currentTime = currentTime;
   }, [selectedBook.id, currentTime]);
 
+  const captionIndex = Math.floor(currentTime / 2) % CAPTIONS.length;
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <div className="absolute inset-0 bg-[url('/bg-main.png')] bg-cover bg-center brightness-[1.28] contrast-[1.08] saturate-[1.14] md:bg-[url('/bg-desktop.png')]" />
+
       <div className="absolute inset-0 bg-black/18" />
+
       <div className="absolute inset-0 bg-gradient-to-t from-black/62 via-black/14 to-black/0" />
+
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_72%,rgba(255,145,55,0.24),transparent_34%),radial-gradient(circle_at_82%_22%,rgba(255,190,105,0.16),transparent_30%)]" />
 
-      <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-32 pt-4 md:grid md:grid-cols-[1fr_430px] md:gap-10 md:px-10 md:py-7">
+      <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-14 pt-4 md:grid md:grid-cols-[1fr_430px] md:gap-10 md:px-10 md:py-7">
         <div className="flex min-h-0 flex-col">
           <header className="flex items-center justify-between">
             <div className="rounded-full border border-white/20 bg-black/34 px-4 py-2 shadow-[0_0_30px_rgba(255,160,70,0.10)] backdrop-blur-xl">
@@ -141,17 +156,34 @@ export default function Home() {
 
             <div className="mt-3 flex items-center justify-between text-xs text-white/72 md:mt-4 md:text-base">
               <span>{isPlaying ? "Now Playing" : "Continue Listening"}</span>
+
               <span>
                 {formattedCurrentTime} / {formattedDuration}
               </span>
             </div>
 
-            <p className="mt-3 line-clamp-2 text-sm leading-6 text-white/68 md:mt-4 md:text-lg md:leading-8">
-              {selectedBook.preview}
-            </p>
+            <div className="mt-5 min-h-[96px] overflow-hidden rounded-[18px] border border-white/10 bg-black/22 p-4 backdrop-blur-xl">
+              <div className="space-y-1 transition-all duration-500">
+                <p className="text-[15px] leading-7 text-white">
+                  {CAPTIONS[captionIndex]}
+                </p>
+
+                <p className="text-[15px] leading-7 text-white/72">
+                  {CAPTIONS[(captionIndex + 1) % CAPTIONS.length]}
+                </p>
+
+                <p className="text-[15px] leading-7 text-white/52">
+                  {CAPTIONS[(captionIndex + 2) % CAPTIONS.length]}
+                </p>
+
+                <p className="text-[15px] leading-7 text-white/34">
+                  {CAPTIONS[(captionIndex + 3) % CAPTIONS.length]}
+                </p>
+              </div>
+            </div>
           </section>
 
-          <section className="mt-5 min-h-0 pb-28 md:hidden">
+          <section className="mt-5 min-h-0 md:hidden">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-bold tracking-[0.28em] text-white/62">
                 LIBRARY
@@ -227,39 +259,6 @@ export default function Home() {
           </div>
         </aside>
       </section>
-
-      <div className="fixed bottom-3 left-3 right-3 z-50 rounded-[24px] border border-white/14 bg-black/52 px-4 py-3 shadow-[0_0_40px_rgba(255,140,60,0.22)] backdrop-blur-2xl md:hidden">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-black text-white">
-              {selectedBook.title}
-            </p>
-
-            <p className="truncate text-xs text-white/58">
-              {formattedCurrentTime} / {formattedDuration}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div
-              className={`h-2.5 w-2.5 rounded-full bg-orange-300 shadow-[0_0_16px_rgba(255,170,80,1)] ${
-                isPlaying ? "animate-pulse" : ""
-              }`}
-            />
-
-            <div className="text-xs font-semibold text-white/70">
-              {isPlaying ? "Playing" : "Paused"}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-3 h-[2px] overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-orange-300 transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
     </main>
   );
 }
