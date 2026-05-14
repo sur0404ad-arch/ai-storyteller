@@ -136,7 +136,7 @@ export default function Home() {
                 onPause={handlePause}
                 onEnded={handleEnded}
               >
-                <source src={voiceAudio} type="audio/mpeg" />
+             <source src={selectedBook.audio} type="audio/mpeg" />
               </audio>
             </div>
 
