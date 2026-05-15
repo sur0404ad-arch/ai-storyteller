@@ -3,41 +3,41 @@ export const VOICES = [
     id: "michael",
     name: "Michael",
     gender: "Male",
-    audio: "/voice-michael.mp3",
+    elevenlabsVoiceId: "michael-premium",
   },
 
   {
     id: "james",
     name: "James",
     gender: "Male",
-    audio: "/voice-james.mp3",
+    elevenlabsVoiceId: "james-premium",
   },
 
   {
     id: "robert",
     name: "Robert",
     gender: "Male",
-    audio: "/voice-robert.mp3",
+    elevenlabsVoiceId: "robert-premium",
   },
 
   {
     id: "emma",
     name: "Emma",
     gender: "Female",
-    audio: "/voice-emma.mp3",
+    elevenlabsVoiceId: "emma-premium",
   },
 
   {
     id: "olivia",
     name: "Olivia",
     gender: "Female",
-    audio: "/voice-olivia.mp3",
+    elevenlabsVoiceId: "olivia-premium",
   },
 
   {
     id: "sophia",
     name: "Sophia",
     gender: "Female",
-    audio: "/voice-sophia.mp3",
+    elevenlabsVoiceId: "sophia-premium",
   },
 ];

@@ -1,204 +1,131 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
 
-export type PlayerBook = {
-  id: number;
-  title: string;
-  author: string;
-  source: string;
-  chapter: string;
-  subtitle: string;
-  preview: string;
-  audio: string;
-  captions: string[];
-};
-
-export type Voice = {
-  id: string;
-  name: string;
-  gender: string;
-  audio: string;
-};
-
-const STORAGE_KEY = "ai-storyteller-book-sessions";
-const LAST_BOOK_KEY = "ai-storyteller-last-book";
-const VOICE_KEY = "ai-storyteller-selected-voice";
-
-type BookProgress = {
-  chapterId: number;
-  currentTime: number;
-  duration: number;
-};
-
-type SavedSessions = Record<number, BookProgress>;
-
 function formatTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "0:00";
+  }
 
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
 
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
-function getPlayerBook(bookId: number, chapterId: number): PlayerBook {
-  const book = BOOKS.find((item) => item.id === bookId) ?? BOOKS[0];
-
-  const chapter =
-    book.chapters.find((item) => item.id === chapterId) ?? book.chapters[0];
-
-  return {
-    id: book.id,
-    title: book.title,
-    author: book.author,
-    source: "Project Gutenberg",
-    chapter: chapter.title,
-    subtitle: chapter.subtitle,
-    preview: chapter.preview,
-    audio: chapter.audio,
-    captions: chapter.captions ?? [],
-  };
-}
-
-function getAllPlayerBooks(): PlayerBook[] {
-  return BOOKS.map((book) => getPlayerBook(book.id, book.chapters[0].id));
+  return `${minutes}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
 }
 
 export function usePlayer() {
-  const [selectedBookId, setSelectedBookId] = useState(BOOKS[0].id);
-  const [selectedChapterId, setSelectedChapterId] = useState(
-    BOOKS[0].chapters[0].id
-  );
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const [selectedVoiceId, setSelectedVoiceId] = useState(VOICES[0].id);
+  const books = useMemo(() => BOOKS, []);
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(BOOKS[0]);
+  const [selectedVoice, setSelectedVoice] = useState(VOICES[0]);
+
   const [searchValue, setSearchValue] = useState("");
+
   const [isPlaying, setIsPlaying] = useState(false);
+
   const [currentTime, setCurrentTime] = useState(0);
+
   const [duration, setDuration] = useState(0);
-  const [sessions, setSessions] = useState<SavedSessions>({});
-  const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
 
-  const books = useMemo(() => getAllPlayerBooks(), []);
+  const selectedChapter = selectedBook.chapters[0];
 
-  const selectedBook = useMemo(
-    () => getPlayerBook(selectedBookId, selectedChapterId),
-    [selectedBookId, selectedChapterId]
-  );
-
-  const selectedVoice = useMemo(() => {
-    return VOICES.find((voice) => voice.id === selectedVoiceId) ?? VOICES[0];
-  }, [selectedVoiceId]);
+  const voiceAudio =
+    selectedChapter.audioByVoice[
+      selectedVoice.id as keyof typeof selectedChapter.audioByVoice
+    ];
 
   useEffect(() => {
-    try {
-      const storedSessions = window.localStorage.getItem(STORAGE_KEY);
-      const storedLastBook = window.localStorage.getItem(LAST_BOOK_KEY);
-      const storedVoice = window.localStorage.getItem(VOICE_KEY);
+    if (!audioRef.current) return;
 
-      const parsedSessions = storedSessions
-        ? (JSON.parse(storedSessions) as SavedSessions)
-        : {};
+    audioRef.current.pause();
 
-      const lastBookId = storedLastBook ? Number(storedLastBook) : BOOKS[0].id;
-      const safeBook = BOOKS.find((book) => book.id === lastBookId) ?? BOOKS[0];
-      const savedProgress = parsedSessions[safeBook.id];
+    audioRef.current.load();
 
-      const safeVoice =
-        VOICES.find((voice) => voice.id === storedVoice) ?? VOICES[0];
+    setCurrentTime(0);
 
-      setSessions(parsedSessions);
-      setSelectedBookId(safeBook.id);
-      setSelectedVoiceId(safeVoice.id);
+    setDuration(0);
 
-      if (savedProgress) {
-        setSelectedChapterId(savedProgress.chapterId);
-        setCurrentTime(savedProgress.currentTime);
-        setDuration(savedProgress.duration);
-      } else {
-        setSelectedChapterId(safeBook.chapters[0].id);
-        setCurrentTime(0);
-        setDuration(0);
-      }
+    setIsPlaying(false);
+  }, [voiceAudio]);
 
-      setHasLoadedStorage(true);
-    } catch {
-      setHasLoadedStorage(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hasLoadedStorage) return;
-
-    const updatedSessions: SavedSessions = {
-      ...sessions,
-      [selectedBookId]: {
-        chapterId: selectedChapterId,
-        currentTime,
-        duration,
-      },
-    };
-
-    setSessions(updatedSessions);
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSessions));
-    window.localStorage.setItem(LAST_BOOK_KEY, String(selectedBookId));
-    window.localStorage.setItem(VOICE_KEY, selectedVoiceId);
-  }, [
-    selectedBookId,
-    selectedChapterId,
-    currentTime,
-    duration,
-    selectedVoiceId,
-    hasLoadedStorage,
-  ]);
-
-  const filteredBooks = useMemo(() => {
+  const filteredBooks = books.filter((book) => {
     const value = searchValue.trim().toLowerCase();
 
-    if (!value) return books;
+    if (!value) return true;
 
-    return books.filter(
-      (book) =>
-        book.title.toLowerCase().includes(value) ||
-        book.author.toLowerCase().includes(value)
+    return (
+      book.title.toLowerCase().includes(value) ||
+      book.author.toLowerCase().includes(value)
     );
-  }, [books, searchValue]);
+  });
 
   const progressPercent =
-    duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0;
+    duration > 0
+      ? Math.min((currentTime / duration) * 100, 100)
+      : 0;
 
-  function selectBook(book: PlayerBook) {
-    const originalBook = BOOKS.find((item) => item.id === book.id) ?? BOOKS[0];
-    const savedProgress = sessions[originalBook.id];
-
-    setSelectedBookId(originalBook.id);
-    setIsPlaying(false);
-    setIsSearchOpen(false);
-    setSearchValue("");
-
-    if (savedProgress) {
-      setSelectedChapterId(savedProgress.chapterId);
-      setCurrentTime(savedProgress.currentTime);
-      setDuration(savedProgress.duration);
-      return;
-    }
-
-    setSelectedChapterId(originalBook.chapters[0].id);
-    setCurrentTime(0);
-    setDuration(0);
+  function selectBook(book: (typeof BOOKS)[number]) {
+    setSelectedBook(book);
   }
 
   function selectVoice(voiceId: string) {
-    const safeVoice = VOICES.find((voice) => voice.id === voiceId) ?? VOICES[0];
+    const foundVoice = VOICES.find(
+      (voice) => voice.id === voiceId
+    );
 
-    setSelectedVoiceId(safeVoice.id);
-    setIsVoiceOpen(false);
+    if (!foundVoice) return;
+
+    setSelectedVoice(foundVoice);
+  }
+
+  async function togglePlay() {
+    const audio = audioRef.current;
+
+    if (!audio) return;
+
+    if (audio.paused) {
+      try {
+        await audio.play();
+
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
+
+      return;
+    }
+
+    audio.pause();
+
+    setIsPlaying(false);
+  }
+
+  function restart() {
+    const audio = audioRef.current;
+
+    if (!audio) return;
+
+    audio.currentTime = 0;
+
+    setCurrentTime(0);
+  }
+
+  function seekTo(percent: number) {
+    const audio = audioRef.current;
+
+    if (!audio || duration <= 0) return;
+
+    const nextTime = (duration * percent) / 100;
+
+    audio.currentTime = nextTime;
+
+    setCurrentTime(nextTime);
   }
 
   function handleLoadedMetadata(durationValue: number) {
@@ -219,34 +146,60 @@ export function usePlayer() {
 
   function handleEnded() {
     setIsPlaying(false);
-    setCurrentTime(duration);
   }
 
   return {
     books,
-    selectedBook,
     filteredBooks,
-    selectedVoice,
     voices: VOICES,
-    isVoiceOpen,
-    isSearchOpen,
+
+    selectedBook: {
+      ...selectedBook,
+      chapter: selectedChapter.title,
+      subtitle: selectedChapter.subtitle,
+      captions: selectedChapter.captions,
+    },
+
+    selectedVoice,
+
     searchValue,
+
+    voiceAudio,
+
+    audioRef,
+
     isPlaying,
+
     currentTime,
+
     duration,
+
     progressPercent,
+
     formattedCurrentTime: formatTime(currentTime),
+
     formattedDuration: formatTime(duration),
-    voiceAudio: selectedBook.audio,
-    setIsVoiceOpen,
-    setIsSearchOpen,
+
     setSearchValue,
-    selectVoice,
+
     selectBook,
+
+    selectVoice,
+
+    togglePlay,
+
+    restart,
+
+    seekTo,
+
     handleLoadedMetadata,
+
     handleTimeUpdate,
+
     handlePlay,
+
     handlePause,
+
     handleEnded,
   };
 }
