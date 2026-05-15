@@ -34,24 +34,22 @@ export default function Home() {
   }, [books, searchValue]);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main className="relative h-screen overflow-hidden bg-black text-white">
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: "url('/bg-desktop.png')",
-        }}
+        style={{ backgroundImage: "url('/bg-desktop.png')" }}
       />
 
       <div className="absolute inset-0 bg-black/55" />
 
-      <section className="relative z-10 mx-auto flex h-screen w-full max-w-6xl items-center overflow-hidden px-4 py-3">
-        <div className="grid w-full gap-4 lg:grid-cols-[310px_1fr]">
-          <aside className="rounded-3xl border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
+      <section className="relative z-10 mx-auto flex h-full w-full max-w-6xl items-center px-3 py-3">
+        <div className="grid h-full w-full gap-3 lg:h-auto lg:grid-cols-[310px_1fr]">
+          <aside className="rounded-3xl border border-white/10 bg-black/35 p-3 backdrop-blur-xl lg:p-4">
             <input
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Search stories..."
-              className="mb-3 w-full rounded-xl border border-white/10 bg-black/45 px-3 py-2 text-sm outline-none placeholder:text-white/35"
+              className="mb-2 w-full rounded-xl border border-white/10 bg-black/45 px-3 py-2 text-sm outline-none placeholder:text-white/35"
             />
 
             <div className="space-y-2">
@@ -65,24 +63,19 @@ export default function Home() {
                       : "border-white/10 bg-white/5 hover:bg-white/10"
                   }`}
                 >
-                  <p className="text-sm font-medium">
-                    {book.title}
-                  </p>
-
-                  <p className="text-xs text-white/50">
-                    {book.author}
-                  </p>
+                  <p className="text-sm font-medium">{book.title}</p>
+                  <p className="text-xs text-white/50">{book.author}</p>
                 </button>
               ))}
             </div>
           </aside>
 
-          <div className="rounded-3xl border border-white/10 bg-black/35 p-5 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-black/35 p-4 backdrop-blur-xl lg:p-5">
             <p className="mb-2 text-xs uppercase tracking-[0.28em] text-orange-300/70">
               Now Playing
             </p>
 
-            <h1 className="text-3xl font-semibold leading-tight">
+            <h1 className="text-3xl font-semibold leading-tight lg:text-4xl">
               {selectedBook.title}
             </h1>
 
@@ -94,10 +87,9 @@ export default function Home() {
               Continue from {formattedCurrentTime}
             </p>
 
-            <div className="mt-7">
+            <div className="mt-5 lg:mt-7">
               <div className="mb-2 flex justify-between text-xs text-white/50">
                 <span>{formattedCurrentTime}</span>
-
                 <span>{formattedDuration}</span>
               </div>
 
@@ -107,14 +99,12 @@ export default function Home() {
                 max={duration || 0}
                 step={0.1}
                 value={currentTime}
-                onChange={(e) =>
-                  handleSeek(Number(e.target.value))
-                }
+                onChange={(e) => handleSeek(Number(e.target.value))}
                 className="w-full cursor-pointer"
               />
             </div>
 
-            <div className="mt-5 flex items-center gap-2">
+            <div className="mt-4 flex items-center gap-2 lg:mt-5">
               <button
                 onClick={togglePlay}
                 className="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-orange-400"
@@ -130,7 +120,7 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="mt-7">
+            <div className="mt-5 lg:mt-7">
               <p className="mb-2 text-xs uppercase tracking-[0.28em] text-orange-300/70">
                 Voices
               </p>
@@ -139,9 +129,7 @@ export default function Home() {
                 {voices.map((voice) => (
                   <button
                     key={voice.id}
-                    onClick={() =>
-                      setSelectedVoiceId(voice.id)
-                    }
+                    onClick={() => setSelectedVoiceId(voice.id)}
                     className={`rounded-full border px-3 py-1.5 text-xs transition ${
                       selectedVoiceId === voice.id
                         ? "border-orange-400 bg-orange-500/20"
@@ -153,7 +141,7 @@ export default function Home() {
                 ))}
               </div>
 
-              <p className="mt-4 text-xs text-white/45">
+              <p className="mt-3 text-xs text-white/45">
                 Active Voice: {selectedVoice.name}
               </p>
             </div>
