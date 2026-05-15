@@ -7,16 +7,12 @@ import { VOICES } from "../data/voices";
 const STORAGE_KEY = "ai-storyteller-player";
 
 function formatTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds <= 0) {
-    return "0:00";
-  }
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
 
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
 
-  return `${minutes}:${remainingSeconds
-    .toString()
-    .padStart(2, "0")}`;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
 export function usePlayer() {
@@ -25,40 +21,27 @@ export function usePlayer() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [selectedBookId, setSelectedBookId] = useState(
-    books[0]?.id
-  );
-
-  const [selectedVoiceId, setSelectedVoiceId] = useState(
-    voices[0]?.id
-  );
-
+  const [selectedBookId, setSelectedBookId] = useState(books[0]?.id);
+  const [selectedVoiceId, setSelectedVoiceId] = useState(voices[0]?.id);
   const [isPlaying, setIsPlaying] = useState(false);
-
-  const [progressByBook, setProgressByBook] = useState<
-    Record<string, number>
-  >({});
+  const [progressByBook, setProgressByBook] = useState<Record<string, number>>({});
+  const [duration, setDuration] = useState(0);
 
   const selectedBook =
-    books.find((book) => book.id === selectedBookId) ||
-    books[0];
+    books.find((book) => book.id === selectedBookId) || books[0];
 
   const selectedVoice =
-    voices.find((voice) => voice.id === selectedVoiceId) ||
-    voices[0];
+    voices.find((voice) => voice.id === selectedVoiceId) || voices[0];
 
   const currentChapter = selectedBook?.chapters?.[0];
 
   const audioSource =
     currentChapter?.audioByVoice?.[
       selectedVoice?.id as keyof typeof currentChapter.audioByVoice
-    ];
+    ] || "";
 
   const storageKey = `${selectedBookId}-${selectedVoiceId}`;
-
   const currentTime = progressByBook[storageKey] || 0;
-
-  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -68,17 +51,9 @@ export function usePlayer() {
     try {
       const parsed = JSON.parse(saved);
 
-      if (parsed.selectedBookId) {
-        setSelectedBookId(parsed.selectedBookId);
-      }
-
-      if (parsed.selectedVoiceId) {
-        setSelectedVoiceId(parsed.selectedVoiceId);
-      }
-
-      if (parsed.progressByBook) {
-        setProgressByBook(parsed.progressByBook);
-      }
+      if (parsed.selectedBookId) setSelectedBookId(parsed.selectedBookId);
+      if (parsed.selectedVoiceId) setSelectedVoiceId(parsed.selectedVoiceId);
+      if (parsed.progressByBook) setProgressByBook(parsed.progressByBook);
     } catch (error) {
       console.error(error);
     }
@@ -93,31 +68,21 @@ export function usePlayer() {
         progressByBook,
       })
     );
-  }, [
-    selectedBookId,
-    selectedVoiceId,
-    progressByBook,
-  ]);
+  }, [selectedBookId, selectedVoiceId, progressByBook]);
 
   useEffect(() => {
     if (!audioSource) return;
 
     const audio = new Audio(audioSource);
-
     audioRef.current = audio;
-
     audio.preload = "auto";
 
-    const savedProgress =
-      progressByBook[storageKey] || 0;
+    const savedProgress = progressByBook[storageKey] || 0;
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration || 0);
 
-      if (
-        savedProgress > 0 &&
-        savedProgress < audio.duration
-      ) {
+      if (savedProgress > 0 && savedProgress < audio.duration) {
         audio.currentTime = savedProgress;
       }
     };
@@ -133,35 +98,15 @@ export function usePlayer() {
       setIsPlaying(false);
     };
 
-    audio.addEventListener(
-      "loadedmetadata",
-      handleLoadedMetadata
-    );
-
-    audio.addEventListener(
-      "timeupdate",
-      handleTimeUpdate
-    );
-
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("ended", handleEnded);
 
     return () => {
       audio.pause();
-
-      audio.removeEventListener(
-        "loadedmetadata",
-        handleLoadedMetadata
-      );
-
-      audio.removeEventListener(
-        "timeupdate",
-        handleTimeUpdate
-      );
-
-      audio.removeEventListener(
-        "ended",
-        handleEnded
-      );
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
     };
   }, [audioSource]);
 
@@ -203,27 +148,17 @@ export function usePlayer() {
   return {
     books,
     voices,
-
     selectedBook,
     selectedVoice,
-
     selectedBookId,
     selectedVoiceId,
-
     setSelectedBookId,
     setSelectedVoiceId,
-
     isPlaying,
-
     currentTime,
     duration,
-
-    formattedCurrentTime:
-      formatTime(currentTime),
-
-    formattedDuration:
-      formatTime(duration),
-
+    formattedCurrentTime: formatTime(currentTime),
+    formattedDuration: formatTime(duration),
     togglePlay,
     handleSeek,
     restart,

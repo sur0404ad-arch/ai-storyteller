@@ -44,7 +44,7 @@ export default function Home() {
 
       <div className="absolute inset-0 bg-black/55" />
 
-      <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-5">
+      <section className="relative z-10 mx-auto flex h-screen w-full max-w-6xl items-center overflow-hidden px-4 py-3">
         <div className="grid w-full gap-4 lg:grid-cols-[310px_1fr]">
           <aside className="rounded-3xl border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
             <input
