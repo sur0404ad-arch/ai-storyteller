@@ -1,177 +1,231 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
 
+const STORAGE_KEY = "ai-storyteller-player";
+
 function formatTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "0:00";
+  }
 
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
 
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  return `${minutes}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
 }
 
 export function usePlayer() {
+  const books = useMemo(() => BOOKS, []);
+  const voices = useMemo(() => VOICES, []);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const books = useMemo(() => BOOKS, []);
+  const [selectedBookId, setSelectedBookId] = useState(
+    books[0]?.id
+  );
 
-  const [selectedBook, setSelectedBook] = useState(BOOKS[0]);
-  const [selectedVoice, setSelectedVoice] = useState(VOICES[0]);
-  const [searchValue, setSearchValue] = useState("");
+  const [selectedVoiceId, setSelectedVoiceId] = useState(
+    voices[0]?.id
+  );
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
 
-  const selectedChapter = selectedBook.chapters[0];
+  const [progressByBook, setProgressByBook] = useState<
+    Record<string, number>
+  >({});
 
-  const voiceAudio =
-    selectedChapter.audioByVoice[
-      selectedVoice.id as keyof typeof selectedChapter.audioByVoice
+  const selectedBook =
+    books.find((book) => book.id === selectedBookId) ||
+    books[0];
+
+  const selectedVoice =
+    voices.find((voice) => voice.id === selectedVoiceId) ||
+    voices[0];
+
+  const currentChapter = selectedBook?.chapters?.[0];
+
+  const audioSource =
+    currentChapter?.audioByVoice?.[
+      selectedVoice?.id as keyof typeof currentChapter.audioByVoice
     ];
 
-  const filteredBooks = books.filter((book) => {
-    const value = searchValue.trim().toLowerCase();
+  const storageKey = `${selectedBookId}-${selectedVoiceId}`;
 
-    if (!value) return true;
+  const currentTime = progressByBook[storageKey] || 0;
 
-    return (
-      book.title.toLowerCase().includes(value) ||
-      book.author.toLowerCase().includes(value)
-    );
-  });
+  const [duration, setDuration] = useState(0);
 
-  const progressPercent =
-    duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0;
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
 
-  function resetAudioState() {
-    const audio = audioRef.current;
+    if (!saved) return;
 
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
-    }
+    try {
+      const parsed = JSON.parse(saved);
 
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-  }
-
-  function selectBook(book: (typeof BOOKS)[number]) {
-    resetAudioState();
-    setSelectedBook(book);
-  }
-
-  function selectVoice(voiceId: string) {
-    const foundVoice = VOICES.find((voice) => voice.id === voiceId);
-
-    if (!foundVoice) return;
-
-    resetAudioState();
-    setSelectedVoice(foundVoice);
-  }
-
-  async function togglePlay() {
-    const audio = audioRef.current;
-
-    if (!audio) return;
-
-    if (audio.paused) {
-      try {
-        await audio.play();
-        setIsPlaying(true);
-      } catch {
-        setIsPlaying(false);
+      if (parsed.selectedBookId) {
+        setSelectedBookId(parsed.selectedBookId);
       }
 
-      return;
+      if (parsed.selectedVoiceId) {
+        setSelectedVoiceId(parsed.selectedVoiceId);
+      }
+
+      if (parsed.progressByBook) {
+        setProgressByBook(parsed.progressByBook);
+      }
+    } catch (error) {
+      console.error(error);
     }
+  }, []);
 
-    audio.pause();
-    setIsPlaying(false);
-  }
+  useEffect(() => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        selectedBookId,
+        selectedVoiceId,
+        progressByBook,
+      })
+    );
+  }, [
+    selectedBookId,
+    selectedVoiceId,
+    progressByBook,
+  ]);
 
-  function restart() {
+  useEffect(() => {
+    if (!audioSource) return;
+
+    const audio = new Audio(audioSource);
+
+    audioRef.current = audio;
+
+    audio.preload = "auto";
+
+    const savedProgress =
+      progressByBook[storageKey] || 0;
+
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration || 0);
+
+      if (
+        savedProgress > 0 &&
+        savedProgress < audio.duration
+      ) {
+        audio.currentTime = savedProgress;
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      setProgressByBook((prev) => ({
+        ...prev,
+        [storageKey]: audio.currentTime,
+      }));
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+
+    audio.addEventListener(
+      "loadedmetadata",
+      handleLoadedMetadata
+    );
+
+    audio.addEventListener(
+      "timeupdate",
+      handleTimeUpdate
+    );
+
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.pause();
+
+      audio.removeEventListener(
+        "loadedmetadata",
+        handleLoadedMetadata
+      );
+
+      audio.removeEventListener(
+        "timeupdate",
+        handleTimeUpdate
+      );
+
+      audio.removeEventListener(
+        "ended",
+        handleEnded
+      );
+    };
+  }, [audioSource]);
+
+  const togglePlay = async () => {
     const audio = audioRef.current;
 
     if (!audio) return;
 
-    audio.currentTime = 0;
-    setCurrentTime(0);
-  }
+    try {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        await audio.play();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-  function seekTo(percent: number) {
+  const handleSeek = (value: number) => {
     const audio = audioRef.current;
 
-    if (!audio || duration <= 0) return;
+    if (!audio) return;
 
-    const nextTime = (duration * percent) / 100;
+    audio.currentTime = value;
 
-    audio.currentTime = nextTime;
-    setCurrentTime(nextTime);
-  }
+    setProgressByBook((prev) => ({
+      ...prev,
+      [storageKey]: value,
+    }));
+  };
 
-  function handleLoadedMetadata(durationValue: number) {
-    setDuration(durationValue);
-  }
-
-  function handleTimeUpdate(currentTimeValue: number) {
-    setCurrentTime(currentTimeValue);
-  }
-
-  function handlePlay() {
-    setIsPlaying(true);
-  }
-
-  function handlePause() {
-    setIsPlaying(false);
-  }
-
-  function handleEnded() {
-    setIsPlaying(false);
-    setCurrentTime(0);
-  }
+  const restart = () => {
+    handleSeek(0);
+  };
 
   return {
     books,
-    filteredBooks,
-    voices: VOICES,
+    voices,
 
-    selectedBook: {
-      ...selectedBook,
-      chapter: selectedChapter.title,
-      subtitle: selectedChapter.subtitle,
-      captions: selectedChapter.captions,
-    },
-
+    selectedBook,
     selectedVoice,
-    searchValue,
-    voiceAudio,
 
-    audioRef,
+    selectedBookId,
+    selectedVoiceId,
+
+    setSelectedBookId,
+    setSelectedVoiceId,
+
     isPlaying,
+
     currentTime,
     duration,
-    progressPercent,
 
-    formattedCurrentTime: formatTime(currentTime),
-    formattedDuration: formatTime(duration),
+    formattedCurrentTime:
+      formatTime(currentTime),
 
-    setSearchValue,
-    selectBook,
-    selectVoice,
+    formattedDuration:
+      formatTime(duration),
 
     togglePlay,
+    handleSeek,
     restart,
-    seekTo,
-
-    handleLoadedMetadata,
-    handleTimeUpdate,
-    handlePlay,
-    handlePause,
-    handleEnded,
   };
 }
