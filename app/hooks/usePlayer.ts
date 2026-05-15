@@ -23,6 +23,7 @@ export function usePlayer() {
   const books = useMemo(() => BOOKS, []);
 
   const [selectedBook, setSelectedBook] = useState(BOOKS[0]);
+
   const [selectedVoice, setSelectedVoice] = useState(VOICES[0]);
 
   const [searchValue, setSearchValue] = useState("");
@@ -33,12 +34,33 @@ export function usePlayer() {
 
   const [duration, setDuration] = useState(0);
 
+  const [savedProgress, setSavedProgress] = useState<
+    Record<string, number>
+  >({});
+
   const selectedChapter = selectedBook.chapters[0];
+
+  const storageKey = `${selectedBook.id}-${selectedVoice.id}`;
 
   const voiceAudio =
     selectedChapter.audioByVoice[
       selectedVoice.id as keyof typeof selectedChapter.audioByVoice
     ];
+
+  useEffect(() => {
+    const stored = localStorage.getItem("ai-story-progress");
+
+    if (stored) {
+      setSavedProgress(JSON.parse(stored));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "ai-story-progress",
+      JSON.stringify(savedProgress)
+    );
+  }, [savedProgress]);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -47,12 +69,12 @@ export function usePlayer() {
 
     audioRef.current.load();
 
-    setCurrentTime(0);
+    const savedTime = savedProgress[storageKey] || 0;
 
-    setDuration(0);
+    setCurrentTime(savedTime);
 
     setIsPlaying(false);
-  }, [voiceAudio]);
+  }, [voiceAudio, storageKey, savedProgress]);
 
   const filteredBooks = books.filter((book) => {
     const value = searchValue.trim().toLowerCase();
@@ -91,6 +113,10 @@ export function usePlayer() {
 
     if (audio.paused) {
       try {
+        if (currentTime > 0) {
+          audio.currentTime = currentTime;
+        }
+
         await audio.play();
 
         setIsPlaying(true);
@@ -114,6 +140,11 @@ export function usePlayer() {
     audio.currentTime = 0;
 
     setCurrentTime(0);
+
+    setSavedProgress((prev) => ({
+      ...prev,
+      [storageKey]: 0,
+    }));
   }
 
   function seekTo(percent: number) {
@@ -126,14 +157,28 @@ export function usePlayer() {
     audio.currentTime = nextTime;
 
     setCurrentTime(nextTime);
+
+    setSavedProgress((prev) => ({
+      ...prev,
+      [storageKey]: nextTime,
+    }));
   }
 
   function handleLoadedMetadata(durationValue: number) {
     setDuration(durationValue);
+
+    if (audioRef.current && currentTime > 0) {
+      audioRef.current.currentTime = currentTime;
+    }
   }
 
   function handleTimeUpdate(currentTimeValue: number) {
     setCurrentTime(currentTimeValue);
+
+    setSavedProgress((prev) => ({
+      ...prev,
+      [storageKey]: currentTimeValue,
+    }));
   }
 
   function handlePlay() {
@@ -146,6 +191,11 @@ export function usePlayer() {
 
   function handleEnded() {
     setIsPlaying(false);
+
+    setSavedProgress((prev) => ({
+      ...prev,
+      [storageKey]: 0,
+    }));
   }
 
   return {
