@@ -29,7 +29,7 @@ export default function PlayerCard({
   children,
 }: PlayerCardProps) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-black/30 via-black/15 to-orange-950/15 p-3 shadow-2xl shadow-black/35 backdrop-blur-md lg:rounded-[2rem] lg:p-7">
+    <div className="rounded-2xl border border-white/10 bg-black/18 p-3 shadow-2xl shadow-black/35 lg:rounded-[2rem] lg:bg-gradient-to-br lg:from-black/30 lg:via-black/15 lg:to-orange-950/15 lg:p-7 lg:backdrop-blur-md">
       <p className="mb-1 text-[9px] uppercase tracking-[0.26em] text-orange-300/75 lg:mb-3 lg:text-[11px]">
         Now Playing
       </p>
