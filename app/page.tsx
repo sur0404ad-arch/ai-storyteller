@@ -1,9 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-import Sidebar from "./components/Sidebar";
 import PlayerCard from "./components/PlayerCard";
+import Sidebar from "./components/Sidebar";
 import VoiceSelector from "./components/VoiceSelector";
 
 import { usePlayer } from "./hooks/usePlayer";
@@ -16,8 +14,8 @@ export default function Home() {
     selectedVoice,
     selectedBookId,
     selectedVoiceId,
-    setSelectedBookId,
-    setSelectedVoiceId,
+    selectedChapterId,
+    currentChapter,
     isPlaying,
     currentTime,
     duration,
@@ -26,82 +24,83 @@ export default function Home() {
     togglePlay,
     handleSeek,
     restart,
+    setSelectedBookId,
+    setSelectedVoiceId,
+    setSelectedChapterId,
   } = usePlayer();
-
-  const [searchValue, setSearchValue] = useState("");
-  const [activeChapterId, setActiveChapterId] =
-    useState(1);
-
-  const filteredBooks = useMemo(() => {
-    return books.filter((book) =>
-      `${book.title} ${book.author}`
-        .toLowerCase()
-        .includes(searchValue.toLowerCase())
-    );
-  }, [books, searchValue]);
 
   return (
     <main
-      className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-black p-2 text-white lg:flex lg:items-center lg:justify-center lg:p-8"
-      style={{
-        backgroundImage:
-          "url('/bg-desktop.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      className="
+        relative
+        flex
+        min-h-screen
+        items-center
+        justify-center
+        overflow-hidden
+        bg-black
+        px-10
+        py-10
+      "
     >
-      <section className="mx-auto grid h-full w-full max-w-[1280px] grid-rows-[118px_1fr] gap-2 overflow-hidden lg:h-auto lg:grid-cols-[320px_1fr] lg:grid-rows-none lg:gap-6">
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: "url('/bg-desktop.png')",
+        }}
+      />
+
+      <div className="absolute inset-0 bg-black/10" />
+
+      <div
+        className="
+          relative
+          z-10
+          flex
+          w-full
+          max-w-[1500px]
+          gap-8
+        "
+      >
         <Sidebar
-          books={filteredBooks}
+          books={books.map((book) => ({
+            id: book.id,
+            title: book.title,
+            author: book.author,
+          }))}
           selectedBookId={selectedBookId}
-          searchValue={searchValue}
-          onSearchChange={setSearchValue}
-          onSelectBook={(bookId) => {
-            setSelectedBookId(bookId);
-            setActiveChapterId(1);
-          }}
+          searchValue=""
+          onSearchChange={() => {}}
+          onSelectBook={setSelectedBookId}
         />
 
-        <PlayerCard
-          title={selectedBook.title}
-          author={selectedBook.author}
-          formattedCurrentTime={
-            formattedCurrentTime
-          }
-          formattedDuration={
-            formattedDuration
-          }
-          currentTime={currentTime}
-          duration={duration}
-          isPlaying={isPlaying}
-          selectedVoiceName={
-            selectedVoice.name
-          }
-          sourceName={selectedBook.sourceName}
-          sourceType={selectedBook.sourceType}
-          chapters={selectedBook.chapters}
-          activeChapterId={activeChapterId}
-          onSelectChapter={
-            setActiveChapterId
-          }
-          onSeek={handleSeek}
-          onTogglePlay={togglePlay}
-          onRestart={restart}
-        >
-          <VoiceSelector
-            voices={voices}
-            selectedVoiceId={
-              selectedVoiceId
-            }
-            selectedVoiceName={
-              selectedVoice.name
-            }
-            onSelectVoice={
-              setSelectedVoiceId
-            }
-          />
-        </PlayerCard>
-      </section>
+        <div className="flex-1">
+          <PlayerCard
+            title={selectedBook.title}
+            author={selectedBook.author}
+            formattedCurrentTime={formattedCurrentTime}
+            formattedDuration={formattedDuration}
+            currentTime={currentTime}
+            duration={duration}
+            isPlaying={isPlaying}
+            selectedVoiceName={selectedVoice.name}
+            sourceName="Project Gutenberg"
+            sourceType="Public-Domain"
+            chapters={selectedBook.chapters}
+            activeChapterId={selectedChapterId}
+            onSelectChapter={setSelectedChapterId}
+            onSeek={handleSeek}
+            onTogglePlay={togglePlay}
+            onRestart={restart}
+          >
+            <VoiceSelector
+              voices={voices}
+              selectedVoiceId={selectedVoiceId}
+              onSelectVoice={setSelectedVoiceId}
+            />
+          </PlayerCard>
+        </div>
+      </div>
     </main>
   );
 }
