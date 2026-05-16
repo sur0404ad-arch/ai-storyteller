@@ -4,12 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
 
-const STORAGE_KEY = "ai-storyteller-player-v4";
+const STORAGE_KEY = "ai-storyteller-player-v5";
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
+
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
+
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
@@ -18,6 +20,7 @@ export function usePlayer() {
   const voices = useMemo(() => VOICES, []);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const shouldAutoPlayRef = useRef(false);
 
   const defaultBookId = String(books[0]?.id ?? "");
   const defaultVoiceId = String(voices[0]?.id ?? "");
@@ -53,9 +56,17 @@ export function usePlayer() {
       try {
         const parsed = JSON.parse(saved);
 
-        if (parsed.selectedBookId) setSelectedBookId(String(parsed.selectedBookId));
-        if (parsed.voiceByBook) setVoiceByBook(parsed.voiceByBook);
-        if (parsed.progressByBookVoice) setProgressByBookVoice(parsed.progressByBookVoice);
+        if (parsed.selectedBookId) {
+          setSelectedBookId(String(parsed.selectedBookId));
+        }
+
+        if (parsed.voiceByBook) {
+          setVoiceByBook(parsed.voiceByBook);
+        }
+
+        if (parsed.progressByBookVoice) {
+          setProgressByBookVoice(parsed.progressByBookVoice);
+        }
 
         return;
       } catch {
@@ -99,12 +110,23 @@ export function usePlayer() {
 
     const savedProgress = progressByBookVoice[progressKey] || 0;
 
-    const handleLoadedMetadata = () => {
+    const handleLoadedMetadata = async () => {
       setDuration(audio.duration || 0);
 
       if (savedProgress > 0 && savedProgress < audio.duration) {
         audio.currentTime = savedProgress;
       }
+
+      if (shouldAutoPlayRef.current) {
+        try {
+          await audio.play();
+          setIsPlaying(true);
+        } catch {
+          setIsPlaying(false);
+        }
+      }
+
+      shouldAutoPlayRef.current = false;
     };
 
     const handleTimeUpdate = () => {
@@ -114,7 +136,9 @@ export function usePlayer() {
       }));
     };
 
-    const handleEnded = () => setIsPlaying(false);
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
 
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("timeupdate", handleTimeUpdate);
@@ -129,10 +153,13 @@ export function usePlayer() {
   }, [audioSource, progressKey]);
 
   const selectBook = (bookId: string | number) => {
+    shouldAutoPlayRef.current = true;
     setSelectedBookId(String(bookId));
   };
 
   const selectVoice = (voiceId: string | number) => {
+    shouldAutoPlayRef.current = true;
+
     setVoiceByBook((prev) => ({
       ...prev,
       [selectedBookId]: String(voiceId),
@@ -169,7 +196,9 @@ export function usePlayer() {
     }));
   };
 
-  const restart = () => handleSeek(0);
+  const restart = () => {
+    handleSeek(0);
+  };
 
   return {
     books,

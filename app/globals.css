@@ -2,49 +2,86 @@
 
 :root {
   --background: #050301;
-  --foreground: #f7f2ea;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --foreground: #ffffff;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html {
-  background: #050301;
-  scroll-behavior: smooth;
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
 }
 
 body {
-  min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
 }
 
 button,
-input,
-audio {
+input {
   font-family: inherit;
 }
 
-::-webkit-scrollbar {
+input[type="range"] {
+  appearance: none;
   height: 4px;
-  width: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(255, 190, 120, 0.35);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ff6a00;
+  cursor: pointer;
+  box-shadow: 0 0 24px rgba(255, 106, 0, 0.45);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #ff6a00;
+  cursor: pointer;
+  box-shadow: 0 0 24px rgba(255, 106, 0, 0.45);
+}
+
+.glass-panel {
+  background: rgba(15, 8, 4, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-card {
+  background: rgba(15, 8, 4, 0.24);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow: hidden;
+  }
+
+  .glass-panel {
+    background: rgba(15, 8, 4, 0.22);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .glass-card {
+    background: rgba(15, 8, 4, 0.18);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
 }

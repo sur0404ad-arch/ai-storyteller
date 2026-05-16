@@ -4,10 +4,9 @@ export const BOOKS = [
     title: "Sherlock Holmes",
     author: "Arthur Conan Doyle",
     cover: "/bg-main.png",
-    sourceText: "/books/1661-0.txt",
     sourceName: "Project Gutenberg",
-    sourceType: "public-domain",
-
+sourceType: "public-domain",
+       
     chapters: [
       {
         id: 1,
