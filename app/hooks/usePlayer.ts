@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
 
-const STORAGE_KEY = "ai-storyteller-player-v3";
+const STORAGE_KEY = "ai-storyteller-player-v4";
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
@@ -19,31 +19,16 @@ export function usePlayer() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const firstBookId = String(books[0]?.id || "");
-  const firstVoiceId = String(voices[0]?.id || "");
+  const defaultBookId = String(books[0]?.id ?? "");
+  const defaultVoiceId = String(voices[0]?.id ?? "");
 
-  const [selectedBookId, setSelectedBookId] = useState(firstBookId);
-
-  const [voiceByBook, setVoiceByBook] = useState<Record<string, string>>(() => {
-    const map: Record<string, string> = {};
-
-    books.forEach((book, index) => {
-      map[String(book.id)] = String(
-        voices[index]?.id || voices[0]?.id || ""
-      );
-    });
-
-    return map;
-  });
-
-  const [progressByBookVoice, setProgressByBookVoice] = useState<
-    Record<string, number>
-  >({});
-
+  const [selectedBookId, setSelectedBookId] = useState(defaultBookId);
+  const [voiceByBook, setVoiceByBook] = useState<Record<string, string>>({});
+  const [progressByBookVoice, setProgressByBookVoice] = useState<Record<string, number>>({});
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
 
-  const selectedVoiceId = voiceByBook[selectedBookId] || firstVoiceId;
+  const selectedVoiceId = voiceByBook[selectedBookId] || defaultVoiceId;
 
   const selectedBook =
     books.find((book) => String(book.id) === selectedBookId) || books[0];
@@ -64,29 +49,30 @@ export function usePlayer() {
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
 
-    if (!saved) return;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
 
-    try {
-      const parsed = JSON.parse(saved);
+        if (parsed.selectedBookId) setSelectedBookId(String(parsed.selectedBookId));
+        if (parsed.voiceByBook) setVoiceByBook(parsed.voiceByBook);
+        if (parsed.progressByBookVoice) setProgressByBookVoice(parsed.progressByBookVoice);
 
-      if (parsed.selectedBookId) {
-        setSelectedBookId(String(parsed.selectedBookId));
+        return;
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
       }
-
-      if (parsed.voiceByBook) {
-        setVoiceByBook((prev) => ({
-          ...prev,
-          ...parsed.voiceByBook,
-        }));
-      }
-
-      if (parsed.progressByBookVoice) {
-        setProgressByBookVoice(parsed.progressByBookVoice);
-      }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
     }
-  }, []);
+
+    const initialVoiceByBook: Record<string, string> = {};
+
+    books.forEach((book, index) => {
+      initialVoiceByBook[String(book.id)] = String(
+        voices[index]?.id || voices[0]?.id || ""
+      );
+    });
+
+    setVoiceByBook(initialVoiceByBook);
+  }, [books, voices]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -102,9 +88,7 @@ export function usePlayer() {
   useEffect(() => {
     if (!audioSource) return;
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    audioRef.current?.pause();
 
     setIsPlaying(false);
     setDuration(0);
@@ -130,9 +114,7 @@ export function usePlayer() {
       }));
     };
 
-    const handleEnded = () => {
-      setIsPlaying(false);
-    };
+    const handleEnded = () => setIsPlaying(false);
 
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("timeupdate", handleTimeUpdate);
@@ -146,7 +128,11 @@ export function usePlayer() {
     };
   }, [audioSource, progressKey]);
 
-  const setSelectedVoiceId = (voiceId: string) => {
+  const selectBook = (bookId: string | number) => {
+    setSelectedBookId(String(bookId));
+  };
+
+  const selectVoice = (voiceId: string | number) => {
     setVoiceByBook((prev) => ({
       ...prev,
       [selectedBookId]: String(voiceId),
@@ -157,17 +143,16 @@ export function usePlayer() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    try {
-      if (isPlaying) {
-        audio.pause();
-        setIsPlaying(false);
-        return;
-      }
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+      return;
+    }
 
+    try {
       await audio.play();
       setIsPlaying(true);
-    } catch (error) {
-      console.error("Audio play failed:", error);
+    } catch {
       setIsPlaying(false);
     }
   };
@@ -184,31 +169,22 @@ export function usePlayer() {
     }));
   };
 
-  const restart = () => {
-    handleSeek(0);
-  };
+  const restart = () => handleSeek(0);
 
   return {
     books,
     voices,
-
     selectedBook,
     selectedVoice,
-
     selectedBookId,
     selectedVoiceId,
-
-    setSelectedBookId,
-    setSelectedVoiceId,
-
+    setSelectedBookId: selectBook,
+    setSelectedVoiceId: selectVoice,
     isPlaying,
-
     currentTime,
     duration,
-
     formattedCurrentTime: formatTime(currentTime),
     formattedDuration: formatTime(duration),
-
     togglePlay,
     handleSeek,
     restart,

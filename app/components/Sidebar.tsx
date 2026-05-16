@@ -20,16 +20,16 @@ export default function Sidebar({
   onSelectBook,
 }: SidebarProps) {
   return (
-    <aside className="rounded-3xl border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
+    <aside className="h-full overflow-hidden rounded-2xl border border-white/10 bg-black/35 p-2 backdrop-blur-xl lg:rounded-3xl lg:p-4">
       <input
         type="text"
         placeholder="Search stories..."
         value={searchValue}
         onChange={(event) => onSearchChange(event.target.value)}
-        className="mb-4 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm outline-none placeholder:text-white/35"
+        className="mb-2 h-8 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-xs outline-none placeholder:text-white/35 lg:h-auto lg:rounded-2xl lg:px-4 lg:py-3 lg:text-sm"
       />
 
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-3 gap-2 lg:flex lg:flex-col lg:gap-3">
         {books.map((book) => {
           const bookId = String(book.id);
 
@@ -37,14 +37,19 @@ export default function Sidebar({
             <button
               key={bookId}
               onClick={() => onSelectBook(bookId)}
-              className={`rounded-3xl border p-4 text-left transition ${
+              className={`h-[58px] overflow-hidden rounded-xl border p-2 text-left transition lg:h-auto lg:rounded-3xl lg:p-4 ${
                 selectedBookId === bookId
                   ? "border-orange-500 bg-orange-500/20"
                   : "border-white/10 bg-black/20 hover:bg-white/5"
               }`}
             >
-              <p className="text-sm font-medium">{book.title}</p>
-              <p className="text-xs text-white/50">{book.author}</p>
+              <p className="truncate text-[11px] font-medium lg:text-sm">
+                {book.title}
+              </p>
+
+              <p className="truncate text-[10px] text-white/50 lg:text-xs">
+                {book.author}
+              </p>
             </button>
           );
         })}

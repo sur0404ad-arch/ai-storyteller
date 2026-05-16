@@ -39,17 +39,15 @@ export default function Home() {
   }, [books, searchValue]);
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-4 py-4 text-white lg:px-8">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: "url('/bg-main.png')",
-        }}
-      />
-
-      <div className="absolute inset-0 bg-black/45" />
-
-      <section className="relative z-10 flex w-full max-w-7xl flex-col gap-4 lg:grid lg:grid-cols-[320px_1fr] lg:gap-6">
+    <main
+      className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-black p-2 text-white lg:flex lg:items-center lg:justify-center lg:p-8"
+      style={{
+        backgroundImage: "url('/bg-desktop.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <section className="mx-auto grid h-full w-full max-w-[1280px] grid-rows-[118px_1fr] gap-2 overflow-hidden lg:h-auto lg:grid-cols-[320px_1fr] lg:grid-rows-none lg:gap-6">
         <Sidebar
           books={filteredBooks}
           selectedBookId={selectedBookId}
