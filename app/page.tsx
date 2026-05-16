@@ -65,6 +65,8 @@ export default function Home() {
           duration={duration}
           isPlaying={isPlaying}
           selectedVoiceName={selectedVoice.name}
+          sourceName={selectedBook.sourceName}
+          sourceType={selectedBook.sourceType}
           onSeek={handleSeek}
           onTogglePlay={togglePlay}
           onRestart={restart}

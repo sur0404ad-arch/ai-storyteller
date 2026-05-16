@@ -4,6 +4,9 @@ export const BOOKS = [
     title: "Sherlock Holmes",
     author: "Arthur Conan Doyle",
     cover: "/bg-main.png",
+    sourceText: "/books/1661-0.txt",
+    sourceName: "Project Gutenberg",
+    sourceType: "public-domain",
 
     chapters: [
       {
@@ -39,6 +42,9 @@ export const BOOKS = [
     title: "Dracula",
     author: "Bram Stoker",
     cover: "/bg-main.png",
+    sourceText: "",
+    sourceName: "Project Gutenberg",
+    sourceType: "public-domain",
 
     chapters: [
       {
@@ -74,6 +80,9 @@ export const BOOKS = [
     title: "Pride and Prejudice",
     author: "Jane Austen",
     cover: "/bg-main.png",
+    sourceText: "",
+    sourceName: "Project Gutenberg",
+    sourceType: "public-domain",
 
     chapters: [
       {

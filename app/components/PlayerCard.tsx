@@ -1,5 +1,7 @@
 "use client";
 
+import SourceBadge from "./SourceBadge";
+
 type PlayerCardProps = {
   title: string;
   author: string;
@@ -9,6 +11,8 @@ type PlayerCardProps = {
   duration: number;
   isPlaying: boolean;
   selectedVoiceName: string;
+  sourceName?: string;
+  sourceType?: string;
   onSeek: (value: number) => void;
   onTogglePlay: () => void;
   onRestart: () => void;
@@ -23,6 +27,8 @@ export default function PlayerCard({
   currentTime,
   duration,
   isPlaying,
+  sourceName,
+  sourceType,
   onSeek,
   onTogglePlay,
   onRestart,
@@ -41,6 +47,8 @@ export default function PlayerCard({
       <p className="mt-1 truncate text-xs text-white/55 lg:mt-3 lg:text-sm">
         {author}
       </p>
+
+      <SourceBadge sourceName={sourceName} sourceType={sourceType} />
 
       <p className="mt-2 text-[9px] uppercase tracking-[0.2em] text-orange-300/70 lg:mt-5 lg:text-[11px]">
         Continue From {formattedCurrentTime}
