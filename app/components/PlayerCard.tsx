@@ -22,7 +22,11 @@ type PlayerCardProps = {
   sourceType?: string;
   chapters?: Chapter[];
   activeChapterId?: number;
+  hasPreviousChapter?: boolean;
+  hasNextChapter?: boolean;
   onSelectChapter?: (chapterId: number) => void;
+  onPreviousChapter?: () => void;
+  onNextChapter?: () => void;
   onSeek: (value: number) => void;
   onTogglePlay: () => void;
   onRestart: () => void;
@@ -41,7 +45,11 @@ export default function PlayerCard({
   sourceType,
   chapters = [],
   activeChapterId = 1,
+  hasPreviousChapter = false,
+  hasNextChapter = false,
   onSelectChapter = () => {},
+  onPreviousChapter = () => {},
+  onNextChapter = () => {},
   onSeek,
   onTogglePlay,
   onRestart,
@@ -86,10 +94,26 @@ export default function PlayerCard({
 
       <div className="mt-3 flex flex-wrap gap-2 lg:mt-6 lg:gap-3">
         <button
+          onClick={onPreviousChapter}
+          disabled={!hasPreviousChapter}
+          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35 lg:px-5 lg:py-3 lg:text-sm"
+        >
+          Previous
+        </button>
+
+        <button
           onClick={onTogglePlay}
           className="rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-orange-950/40 transition hover:scale-[1.02] hover:bg-orange-400 lg:px-7 lg:py-3 lg:text-sm"
         >
           {isPlaying ? "Pause" : "Play"}
+        </button>
+
+        <button
+          onClick={onNextChapter}
+          disabled={!hasNextChapter}
+          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35 lg:px-5 lg:py-3 lg:text-sm"
+        >
+          Next
         </button>
 
         <button
