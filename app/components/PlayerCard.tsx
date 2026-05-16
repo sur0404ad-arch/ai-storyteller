@@ -29,12 +29,12 @@ export default function PlayerCard({
   children,
 }: PlayerCardProps) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/35 p-3 shadow-2xl shadow-black/40 backdrop-blur-2xl lg:h-auto lg:rounded-[2rem] lg:p-7">
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-3 shadow-2xl shadow-black/40 backdrop-blur-md lg:rounded-[2rem] lg:p-7">
       <p className="mb-1 text-[9px] uppercase tracking-[0.26em] text-orange-300/75 lg:mb-3 lg:text-[11px]">
         Now Playing
       </p>
 
-      <h1 className="line-clamp-2 text-2xl font-semibold leading-[1.02] tracking-[-0.04em] lg:max-w-4xl lg:text-5xl">
+      <h1 className="line-clamp-1 text-2xl font-semibold leading-[1] tracking-[-0.04em] lg:line-clamp-2 lg:max-w-4xl lg:text-5xl">
         {title}
       </h1>
 
@@ -79,7 +79,7 @@ export default function PlayerCard({
         </button>
       </div>
 
-      {children}
+      <div className="mt-3 lg:mt-6">{children}</div>
     </div>
   );
 }
