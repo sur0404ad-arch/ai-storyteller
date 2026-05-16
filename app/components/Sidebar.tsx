@@ -1,5 +1,5 @@
 type Book = {
-  id: string;
+  id: string | number;
   title: string;
   author: string;
 };
@@ -30,20 +30,24 @@ export default function Sidebar({
       />
 
       <div className="flex flex-col gap-3">
-        {books.map((book) => (
-          <button
-            key={book.id}
-            onClick={() => onSelectBook(book.id)}
-            className={`rounded-3xl border p-4 text-left transition ${
-              selectedBookId === book.id
-                ? "border-orange-500 bg-orange-500/20"
-                : "border-white/10 bg-black/20 hover:bg-white/5"
-            }`}
-          >
-            <p className="text-sm font-medium">{book.title}</p>
-            <p className="text-xs text-white/50">{book.author}</p>
-          </button>
-        ))}
+        {books.map((book) => {
+          const bookId = String(book.id);
+
+          return (
+            <button
+              key={bookId}
+              onClick={() => onSelectBook(bookId)}
+              className={`rounded-3xl border p-4 text-left transition ${
+                selectedBookId === bookId
+                  ? "border-orange-500 bg-orange-500/20"
+                  : "border-white/10 bg-black/20 hover:bg-white/5"
+              }`}
+            >
+              <p className="text-sm font-medium">{book.title}</p>
+              <p className="text-xs text-white/50">{book.author}</p>
+            </button>
+          );
+        })}
       </div>
     </aside>
   );

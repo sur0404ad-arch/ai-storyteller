@@ -4,14 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
 
-const STORAGE_KEY = "ai-storyteller-player";
+const STORAGE_KEY = "ai-storyteller-player-v3";
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
-
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
-
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
@@ -21,17 +19,37 @@ export function usePlayer() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const [selectedBookId, setSelectedBookId] = useState(books[0]?.id);
-  const [selectedVoiceId, setSelectedVoiceId] = useState(voices[0]?.id);
+  const firstBookId = String(books[0]?.id || "");
+  const firstVoiceId = String(voices[0]?.id || "");
+
+  const [selectedBookId, setSelectedBookId] = useState(firstBookId);
+
+  const [voiceByBook, setVoiceByBook] = useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+
+    books.forEach((book, index) => {
+      map[String(book.id)] = String(
+        voices[index]?.id || voices[0]?.id || ""
+      );
+    });
+
+    return map;
+  });
+
+  const [progressByBookVoice, setProgressByBookVoice] = useState<
+    Record<string, number>
+  >({});
+
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progressByBook, setProgressByBook] = useState<Record<string, number>>({});
   const [duration, setDuration] = useState(0);
 
+  const selectedVoiceId = voiceByBook[selectedBookId] || firstVoiceId;
+
   const selectedBook =
-    books.find((book) => book.id === selectedBookId) || books[0];
+    books.find((book) => String(book.id) === selectedBookId) || books[0];
 
   const selectedVoice =
-    voices.find((voice) => voice.id === selectedVoiceId) || voices[0];
+    voices.find((voice) => String(voice.id) === selectedVoiceId) || voices[0];
 
   const currentChapter = selectedBook?.chapters?.[0];
 
@@ -40,8 +58,8 @@ export function usePlayer() {
       selectedVoice?.id as keyof typeof currentChapter.audioByVoice
     ] || "";
 
-  const storageKey = `${selectedBookId}-${selectedVoiceId}`;
-  const currentTime = progressByBook[storageKey] || 0;
+  const progressKey = `${selectedBookId}-${selectedVoiceId}`;
+  const currentTime = progressByBookVoice[progressKey] || 0;
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -51,11 +69,22 @@ export function usePlayer() {
     try {
       const parsed = JSON.parse(saved);
 
-      if (parsed.selectedBookId) setSelectedBookId(parsed.selectedBookId);
-      if (parsed.selectedVoiceId) setSelectedVoiceId(parsed.selectedVoiceId);
-      if (parsed.progressByBook) setProgressByBook(parsed.progressByBook);
-    } catch (error) {
-      console.error(error);
+      if (parsed.selectedBookId) {
+        setSelectedBookId(String(parsed.selectedBookId));
+      }
+
+      if (parsed.voiceByBook) {
+        setVoiceByBook((prev) => ({
+          ...prev,
+          ...parsed.voiceByBook,
+        }));
+      }
+
+      if (parsed.progressByBookVoice) {
+        setProgressByBookVoice(parsed.progressByBookVoice);
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
 
@@ -64,20 +93,27 @@ export function usePlayer() {
       STORAGE_KEY,
       JSON.stringify({
         selectedBookId,
-        selectedVoiceId,
-        progressByBook,
+        voiceByBook,
+        progressByBookVoice,
       })
     );
-  }, [selectedBookId, selectedVoiceId, progressByBook]);
+  }, [selectedBookId, voiceByBook, progressByBookVoice]);
 
   useEffect(() => {
     if (!audioSource) return;
 
-    const audio = new Audio(audioSource);
-    audioRef.current = audio;
-    audio.preload = "auto";
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
 
-    const savedProgress = progressByBook[storageKey] || 0;
+    setIsPlaying(false);
+    setDuration(0);
+
+    const audio = new Audio(audioSource);
+    audio.preload = "auto";
+    audioRef.current = audio;
+
+    const savedProgress = progressByBookVoice[progressKey] || 0;
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration || 0);
@@ -88,9 +124,9 @@ export function usePlayer() {
     };
 
     const handleTimeUpdate = () => {
-      setProgressByBook((prev) => ({
+      setProgressByBookVoice((prev) => ({
         ...prev,
-        [storageKey]: audio.currentTime,
+        [progressKey]: audio.currentTime,
       }));
     };
 
@@ -108,36 +144,43 @@ export function usePlayer() {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [audioSource]);
+  }, [audioSource, progressKey]);
+
+  const setSelectedVoiceId = (voiceId: string) => {
+    setVoiceByBook((prev) => ({
+      ...prev,
+      [selectedBookId]: String(voiceId),
+    }));
+  };
 
   const togglePlay = async () => {
     const audio = audioRef.current;
-
     if (!audio) return;
 
     try {
       if (isPlaying) {
         audio.pause();
         setIsPlaying(false);
-      } else {
-        await audio.play();
-        setIsPlaying(true);
+        return;
       }
+
+      await audio.play();
+      setIsPlaying(true);
     } catch (error) {
-      console.error(error);
+      console.error("Audio play failed:", error);
+      setIsPlaying(false);
     }
   };
 
   const handleSeek = (value: number) => {
     const audio = audioRef.current;
-
     if (!audio) return;
 
     audio.currentTime = value;
 
-    setProgressByBook((prev) => ({
+    setProgressByBookVoice((prev) => ({
       ...prev,
-      [storageKey]: value,
+      [progressKey]: value,
     }));
   };
 
@@ -148,17 +191,24 @@ export function usePlayer() {
   return {
     books,
     voices,
+
     selectedBook,
     selectedVoice,
+
     selectedBookId,
     selectedVoiceId,
+
     setSelectedBookId,
     setSelectedVoiceId,
+
     isPlaying,
+
     currentTime,
     duration,
+
     formattedCurrentTime: formatTime(currentTime),
     formattedDuration: formatTime(duration),
+
     togglePlay,
     handleSeek,
     restart,
