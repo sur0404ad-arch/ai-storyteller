@@ -2,6 +2,13 @@
 
 import SourceBadge from "./SourceBadge";
 
+type Chapter = {
+  id: number;
+  title: string;
+  subtitle: string;
+  duration: string;
+};
+
 type PlayerCardProps = {
   title: string;
   author: string;
@@ -13,6 +20,9 @@ type PlayerCardProps = {
   selectedVoiceName: string;
   sourceName?: string;
   sourceType?: string;
+  chapters?: Chapter[];
+  activeChapterId?: number;
+  onSelectChapter?: (chapterId: number) => void;
   onSeek: (value: number) => void;
   onTogglePlay: () => void;
   onRestart: () => void;
@@ -29,18 +39,21 @@ export default function PlayerCard({
   isPlaying,
   sourceName,
   sourceType,
+  chapters = [],
+  activeChapterId = 1,
+  onSelectChapter = () => {},
   onSeek,
   onTogglePlay,
   onRestart,
   children,
 }: PlayerCardProps) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 p-3 shadow-2xl shadow-black/30 backdrop-blur-[2px] lg:rounded-[2rem] lg:bg-black/10 lg:p-7 lg:backdrop-blur-[2px]">
+    <div className="h-full overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-3 shadow-2xl shadow-black/30 backdrop-blur-[2px] lg:rounded-[2rem] lg:p-7">
       <p className="mb-1 text-[9px] uppercase tracking-[0.26em] text-orange-300/75 lg:mb-3 lg:text-[11px]">
         Now Playing
       </p>
 
-      <h1 className="line-clamp-1 text-2xl font-semibold leading-[1] tracking-[-0.04em] lg:line-clamp-2 lg:max-w-4xl lg:text-5xl">
+      <h1 className="line-clamp-1 text-2xl font-semibold leading-[1] tracking-[-0.04em] lg:max-w-4xl lg:text-5xl">
         {title}
       </h1>
 
@@ -86,6 +99,50 @@ export default function PlayerCard({
           Restart
         </button>
       </div>
+
+      {chapters.length > 0 && (
+        <div className="mt-5 lg:mt-7">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-orange-200/70 lg:text-xs">
+              Chapters
+            </p>
+
+            <p className="text-[10px] text-white/40 lg:text-xs">
+              {chapters.length} Chapters
+            </p>
+          </div>
+
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {chapters.map((chapter) => {
+              const active = chapter.id === activeChapterId;
+
+              return (
+                <button
+                  key={chapter.id}
+                  onClick={() => onSelectChapter(chapter.id)}
+                  className={`min-w-[170px] rounded-2xl border p-3 text-left transition lg:min-w-[190px] ${
+                    active
+                      ? "border-orange-400/50 bg-orange-500/10"
+                      : "border-white/10 bg-black/10 hover:bg-white/5"
+                  }`}
+                >
+                  <p className="text-sm font-medium text-white">
+                    {chapter.title}
+                  </p>
+
+                  <p className="mt-1 line-clamp-2 text-xs text-white/45">
+                    {chapter.subtitle}
+                  </p>
+
+                  <p className="mt-4 text-[10px] text-white/35">
+                    {chapter.duration}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="mt-3 lg:mt-6">{children}</div>
     </div>

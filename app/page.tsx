@@ -29,6 +29,8 @@ export default function Home() {
   } = usePlayer();
 
   const [searchValue, setSearchValue] = useState("");
+  const [activeChapterId, setActiveChapterId] =
+    useState(1);
 
   const filteredBooks = useMemo(() => {
     return books.filter((book) =>
@@ -42,7 +44,8 @@ export default function Home() {
     <main
       className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-black p-2 text-white lg:flex lg:items-center lg:justify-center lg:p-8"
       style={{
-        backgroundImage: "url('/bg-desktop.png')",
+        backgroundImage:
+          "url('/bg-desktop.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -53,29 +56,49 @@ export default function Home() {
           selectedBookId={selectedBookId}
           searchValue={searchValue}
           onSearchChange={setSearchValue}
-          onSelectBook={setSelectedBookId}
+          onSelectBook={(bookId) => {
+            setSelectedBookId(bookId);
+            setActiveChapterId(1);
+          }}
         />
 
         <PlayerCard
           title={selectedBook.title}
           author={selectedBook.author}
-          formattedCurrentTime={formattedCurrentTime}
-          formattedDuration={formattedDuration}
+          formattedCurrentTime={
+            formattedCurrentTime
+          }
+          formattedDuration={
+            formattedDuration
+          }
           currentTime={currentTime}
           duration={duration}
           isPlaying={isPlaying}
-          selectedVoiceName={selectedVoice.name}
+          selectedVoiceName={
+            selectedVoice.name
+          }
           sourceName={selectedBook.sourceName}
           sourceType={selectedBook.sourceType}
+          chapters={selectedBook.chapters}
+          activeChapterId={activeChapterId}
+          onSelectChapter={
+            setActiveChapterId
+          }
           onSeek={handleSeek}
           onTogglePlay={togglePlay}
           onRestart={restart}
         >
           <VoiceSelector
             voices={voices}
-            selectedVoiceId={selectedVoiceId}
-            selectedVoiceName={selectedVoice.name}
-            onSelectVoice={setSelectedVoiceId}
+            selectedVoiceId={
+              selectedVoiceId
+            }
+            selectedVoiceName={
+              selectedVoice.name
+            }
+            onSelectVoice={
+              setSelectedVoiceId
+            }
           />
         </PlayerCard>
       </section>
