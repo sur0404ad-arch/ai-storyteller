@@ -58,27 +58,32 @@ export default function PlayerCard({
   children,
 }: PlayerCardProps) {
   return (
-    <div className="h-full overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-3 shadow-2xl shadow-black/30 backdrop-blur-[2px] lg:rounded-[2rem] lg:p-7">
-      <p className="mb-1 text-[9px] uppercase tracking-[0.26em] text-orange-300/75 lg:mb-3 lg:text-[11px]">
+    <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-black/10 p-5 shadow-2xl shadow-black/30 backdrop-blur-[2px] lg:rounded-[2rem] lg:p-6">
+      <p className="mb-2 text-[10px] uppercase tracking-[0.26em] text-orange-300/75">
         Now Playing
       </p>
 
-      <h1 className="line-clamp-1 text-2xl font-semibold leading-[1] tracking-[-0.04em] lg:max-w-4xl lg:text-5xl">
+      <h1 className="pr-10 text-4xl font-semibold leading-[0.95] tracking-[-0.04em] lg:text-[3rem]">
         {title}
       </h1>
 
-      <p className="mt-1 truncate text-xs text-white/55 lg:mt-3 lg:text-sm">
+      <p className="mt-3 text-sm text-white/55">
         {author}
       </p>
 
-      <SourceBadge sourceName={sourceName} sourceType={sourceType} />
+      <div className="mt-3">
+        <SourceBadge
+          sourceName={sourceName}
+          sourceType={sourceType}
+        />
+      </div>
 
-      <p className="mt-2 text-[9px] uppercase tracking-[0.2em] text-orange-300/70 lg:mt-5 lg:text-[11px]">
+      <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-orange-300/70">
         Continue From {formattedCurrentTime}
       </p>
 
-      <div className="mt-2 lg:mt-5">
-        <div className="mb-1 flex justify-between text-[10px] text-white/45 lg:text-xs">
+      <div className="mt-3">
+        <div className="mb-1 flex justify-between text-[11px] text-white/45">
           <span>{formattedCurrentTime}</span>
           <span>{formattedDuration}</span>
         </div>
@@ -94,11 +99,11 @@ export default function PlayerCard({
         />
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2 lg:mt-6 lg:gap-3">
+      <div className="mt-4 flex flex-wrap gap-3">
         <button
           onClick={onPreviousChapter}
           disabled={!hasPreviousChapter || isLoadingAudio}
-          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35 lg:px-5 lg:py-3 lg:text-sm"
+          className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
         >
           Previous
         </button>
@@ -106,7 +111,7 @@ export default function PlayerCard({
         <button
           onClick={onTogglePlay}
           disabled={isLoadingAudio}
-          className="rounded-full bg-orange-500 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-orange-950/40 transition hover:scale-[1.02] hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-70 lg:px-7 lg:py-3 lg:text-sm"
+          className="rounded-full bg-orange-500 px-7 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-950/40 transition hover:scale-[1.02] hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isLoadingAudio
             ? "Generating Voice..."
@@ -118,7 +123,7 @@ export default function PlayerCard({
         <button
           onClick={onNextChapter}
           disabled={!hasNextChapter || isLoadingAudio}
-          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35 lg:px-5 lg:py-3 lg:text-sm"
+          className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
         >
           Next
         </button>
@@ -126,25 +131,25 @@ export default function PlayerCard({
         <button
           onClick={onRestart}
           disabled={isLoadingAudio}
-          className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35 lg:px-6 lg:py-3 lg:text-sm"
+          className="rounded-full border border-white/10 bg-white/5 px-6 py-2 text-sm text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
         >
           Restart
         </button>
       </div>
 
       {chapters.length > 0 && (
-        <div className="mt-5 lg:mt-7">
+        <div className="mt-5">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-orange-200/70 lg:text-xs">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-orange-200/70">
               Chapters
             </p>
 
-            <p className="text-[10px] text-white/40 lg:text-xs">
+            <p className="text-[11px] text-white/40">
               {chapters.length} Chapters
             </p>
           </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {chapters.map((chapter) => {
               const active = chapter.id === activeChapterId;
 
@@ -153,7 +158,7 @@ export default function PlayerCard({
                   key={chapter.id}
                   onClick={() => onSelectChapter(chapter.id)}
                   disabled={isLoadingAudio}
-                  className={`min-w-[170px] rounded-2xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 lg:min-w-[190px] ${
+                  className={`min-w-[170px] rounded-2xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
                     active
                       ? "border-orange-400/50 bg-orange-500/10"
                       : "border-white/10 bg-black/10 hover:bg-white/5"
@@ -167,7 +172,7 @@ export default function PlayerCard({
                     {chapter.subtitle}
                   </p>
 
-                  <p className="mt-4 text-[10px] text-white/35">
+                  <p className="mt-3 text-[10px] text-white/35">
                     {chapter.duration}
                   </p>
                 </button>
@@ -177,7 +182,9 @@ export default function PlayerCard({
         </div>
       )}
 
-      <div className="mt-3 lg:mt-6">{children}</div>
+      <div className="mt-5">
+        {children}
+      </div>
     </div>
   );
 }
