@@ -5,7 +5,7 @@ import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
 import { useAudioEngine } from "./useAudioEngine";
 
-const STORAGE_KEY = "ai-storyteller-player-engine-v3";
+const STORAGE_KEY = "ai-storyteller-player-engine-v4";
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) {
@@ -26,6 +26,8 @@ export function usePlayer() {
 
   const saveTimeoutRef =
     useRef<NodeJS.Timeout | null>(null);
+
+  const userUnlockedAudioRef = useRef(false);
 
   const defaultBookId = String(books[0]?.id ?? "");
   const defaultVoiceId = String(voices[0]?.id ?? "");
@@ -189,7 +191,31 @@ export function usePlayer() {
     };
   }, [currentTime, trackKey]);
 
-  const selectBook = (
+  const unlockMobileAudio = async () => {
+    if (userUnlockedAudioRef.current) return;
+
+    try {
+      const audio = audioRef.current;
+
+      if (!audio) return;
+
+      audio.muted = true;
+
+      await audio.play();
+
+      audio.pause();
+
+      audio.currentTime = 0;
+
+      audio.muted = false;
+
+      userUnlockedAudioRef.current = true;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const selectBook = async (
     bookId: string | number
   ) => {
     pause();
@@ -204,7 +230,7 @@ export function usePlayer() {
     setSelectedChapterId(restoredChapter);
   };
 
-  const selectChapter = (
+  const selectChapter = async (
     chapterId: number
   ) => {
     pause();
@@ -217,7 +243,7 @@ export function usePlayer() {
     }));
   };
 
-  const selectVoice = (
+  const selectVoice = async (
     voiceId: string | number
   ) => {
     pause();
@@ -229,12 +255,18 @@ export function usePlayer() {
   };
 
   const togglePlay = async () => {
-    if (isPlaying) {
-      pause();
-      return;
-    }
+    try {
+      await unlockMobileAudio();
 
-    await play();
+      if (isPlaying) {
+        pause();
+        return;
+      }
+
+      await play();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleSeek = (value: number) => {

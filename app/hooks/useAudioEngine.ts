@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-let globalAudio: HTMLAudioElement | null = null;
+let sharedAudio: HTMLAudioElement | null = null;
 
 export function useAudioEngine(audioSrc?: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -12,19 +12,18 @@ export function useAudioEngine(audioSrc?: string) {
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    if (!globalAudio) {
-      globalAudio = new Audio();
-      globalAudio.preload = "auto";
+    if (!sharedAudio) {
+      sharedAudio = new Audio();
+      sharedAudio.preload = "auto";
+      sharedAudio.setAttribute("playsinline", "true");
     }
 
-    audioRef.current = globalAudio;
+    audioRef.current = sharedAudio;
 
     const audio = audioRef.current;
 
-    if (!audio) return;
-
     const handleLoadedMetadata = () => {
-      setDuration(audio.duration || 0);
+      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
     };
 
     const handleTimeUpdate = () => {
@@ -63,9 +62,11 @@ export function useAudioEngine(audioSrc?: string) {
 
     if (!audio || !audioSrc) return;
 
-    if (audio.src !== window.location.origin + audioSrc) {
+    const nextUrl = new URL(audioSrc, window.location.origin).toString();
+
+    if (audio.src !== nextUrl) {
       audio.pause();
-      audio.src = audioSrc;
+      audio.src = nextUrl;
       audio.load();
 
       setCurrentTime(0);
@@ -75,17 +76,18 @@ export function useAudioEngine(audioSrc?: string) {
   }, [audioSrc]);
 
   const play = async () => {
-    try {
-      const audio = audioRef.current;
+    const audio = audioRef.current;
 
-      if (!audio) return;
+    if (!audio || !audioSrc) return;
 
-      await audio.play();
+    const nextUrl = new URL(audioSrc, window.location.origin).toString();
 
-      setIsPlaying(true);
-    } catch (error) {
-      console.error(error);
+    if (audio.src !== nextUrl) {
+      audio.src = nextUrl;
+      audio.load();
     }
+
+    await audio.play();
   };
 
   const pause = () => {
@@ -97,8 +99,10 @@ export function useAudioEngine(audioSrc?: string) {
 
     if (!audio) return;
 
-    audio.currentTime = time;
-    setCurrentTime(time);
+    const safeTime = Math.max(0, time);
+
+    audio.currentTime = safeTime;
+    setCurrentTime(safeTime);
   };
 
   return {
