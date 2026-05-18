@@ -33,32 +33,37 @@ export default function Sidebar({
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [premiumMessage, setPremiumMessage] = useState(false);
 
+  function openPremiumModal() {
+    setPremiumMessage(false);
+    setShowPremiumModal(true);
+  }
+
   function handlePremiumClick() {
     setPremiumMessage(true);
   }
 
   return (
-    <aside className="relative flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-black/30 backdrop-blur-[8px] lg:w-[320px] lg:p-5">
+    <aside className="relative flex h-[calc(100svh-2rem)] w-full flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-black/30 backdrop-blur-[8px] lg:h-full lg:w-[320px] lg:rounded-[2rem] lg:p-5">
       <div className="shrink-0">
         <div className="mb-4">
           <p className="text-[10px] uppercase tracking-[0.32em] text-orange-300/75">
             Library
           </p>
 
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">
+          <h2 className="mt-2 text-[2rem] font-semibold leading-none tracking-[-0.05em] text-white lg:text-2xl">
             Stories
           </h2>
         </div>
 
-        <div className="mb-4 flex items-center rounded-3xl border border-white/10 bg-white/[0.025] px-4 py-3">
+        <div className="mb-4 flex items-center rounded-[1.6rem] border border-white/10 bg-white/[0.025] px-4 py-3 lg:rounded-3xl">
           <input
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search stories..."
-            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/35"
+            className="w-full bg-transparent text-base text-white outline-none placeholder:text-white/35 lg:text-sm"
           />
 
-          <span className="text-lg text-white/60">⌕</span>
+          <span className="text-xl text-white/60 lg:text-lg">⌕</span>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
@@ -70,10 +75,10 @@ export default function Sidebar({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {books.length > 0 ? (
           <>
-            <div className="space-y-3">
+            <div className="space-y-2.5 lg:space-y-3">
               {books.map((book) => {
                 const active = selectedBookId === String(book.id);
 
@@ -81,24 +86,24 @@ export default function Sidebar({
                   <button
                     key={book.id}
                     onClick={() => onSelectBook(book.id)}
-                    className={`group w-full rounded-[1.45rem] border px-4 py-3 text-left transition-all duration-300 ${
+                    className={`group w-full rounded-[1.35rem] border px-4 py-3 text-left transition-all duration-300 lg:rounded-[1.45rem] ${
                       active
                         ? "border-orange-400/60 bg-orange-500/15 shadow-[0_0_28px_rgba(255,120,0,0.16)]"
                         : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-base font-semibold text-white">
+                        <p className="truncate text-[1.05rem] font-semibold leading-tight text-white lg:text-base">
                           {book.title}
                         </p>
 
-                        <p className="mt-1 truncate text-sm text-white/55">
+                        <p className="mt-1 truncate text-[0.95rem] text-white/55 lg:text-sm">
                           {book.author}
                         </p>
                       </div>
 
-                      <div className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[9px] uppercase tracking-[0.15em] text-white/55">
+                      <div className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] text-white/55">
                         Free
                       </div>
                     </div>
@@ -107,7 +112,7 @@ export default function Sidebar({
               })}
             </div>
 
-            <div className="mt-6">
+            <div className="mt-5 lg:mt-6">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-[10px] uppercase tracking-[0.28em] text-yellow-200/70">
                   Premium Collection
@@ -118,25 +123,22 @@ export default function Sidebar({
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5 lg:space-y-3">
                 {PREMIUM_BOOKS.map((book) => (
                   <button
                     key={book.title}
-                    onClick={() => {
-                      setPremiumMessage(false);
-                      setShowPremiumModal(true);
-                    }}
-                    className="group relative w-full overflow-hidden rounded-[1.4rem] border border-yellow-300/10 bg-yellow-500/[0.04] px-4 py-3 text-left opacity-80 transition hover:border-yellow-300/25 hover:bg-yellow-500/[0.08]"
+                    onClick={openPremiumModal}
+                    className="group relative w-full overflow-hidden rounded-[1.3rem] border border-yellow-300/10 bg-yellow-500/[0.04] px-4 py-3 text-left opacity-80 transition hover:border-yellow-300/25 hover:bg-yellow-500/[0.08] lg:rounded-[1.4rem]"
                   >
                     <div className="absolute inset-0 backdrop-blur-[1px]" />
 
-                    <div className="relative flex items-start justify-between gap-3">
+                    <div className="relative flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-base font-semibold text-white/85">
+                        <p className="truncate text-[1rem] font-semibold leading-tight text-white/85 lg:text-base">
                           {book.title}
                         </p>
 
-                        <p className="mt-1 truncate text-sm text-white/45">
+                        <p className="mt-1 truncate text-[0.9rem] text-white/45 lg:text-sm">
                           {book.author}
                         </p>
                       </div>
@@ -150,23 +152,20 @@ export default function Sidebar({
               </div>
 
               <button
-                onClick={() => {
-                  setPremiumMessage(false);
-                  setShowPremiumModal(true);
-                }}
-                className="mt-4 w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-orange-950/30 transition hover:scale-[1.01]"
+                onClick={openPremiumModal}
+                className="mt-4 w-full rounded-[1.25rem] bg-gradient-to-r from-orange-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-orange-950/30 transition hover:scale-[1.01] lg:rounded-2xl"
               >
                 Upgrade to Premium
               </button>
             </div>
           </>
         ) : (
-          <div className="rounded-[1.6rem] border border-dashed border-white/10 bg-black/10 px-5 py-10 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-orange-400/20 bg-orange-500/10 text-3xl text-orange-200/80">
+          <div className="rounded-[1.5rem] border border-dashed border-white/10 bg-black/10 px-5 py-9 text-center lg:rounded-[1.6rem] lg:py-10">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-orange-400/20 bg-orange-500/10 text-3xl text-orange-200/80 lg:h-16 lg:w-16">
               ⌕
             </div>
 
-            <p className="mt-6 text-lg font-semibold text-white">
+            <p className="mt-5 text-lg font-semibold text-white">
               No stories found
             </p>
 
@@ -177,32 +176,27 @@ export default function Sidebar({
         )}
       </div>
 
-      <div className="mt-4 shrink-0 rounded-[1.45rem] border border-orange-400/15 bg-gradient-to-br from-orange-500/10 to-transparent px-4 py-3">
+      <div className="mt-4 shrink-0 rounded-[1.35rem] border border-orange-400/15 bg-gradient-to-br from-orange-500/10 to-transparent px-4 py-3 lg:rounded-[1.45rem]">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-orange-300/20 bg-orange-500/10 text-sm text-orange-200">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-orange-300/20 bg-orange-500/10 text-sm text-orange-200">
             ✦
           </div>
 
-          <div>
-            <p className="text-base font-medium text-white">AI Storyteller</p>
+          <div className="min-w-0">
+            <p className="truncate text-base font-medium text-white">
+              AI Storyteller
+            </p>
 
-            <p className="mt-1 text-xs text-white/45">
+            <p className="mt-1 truncate text-xs text-white/45">
               Free library + Premium access
             </p>
           </div>
-        </div>
-
-        <div className="mt-3 rounded-2xl border border-yellow-300/15 bg-black/20 px-4 py-2.5">
-          <p className="text-xs leading-relaxed text-white/60">
-            Premium will unlock full public-domain search, better voices,
-            unlimited listening, and future exclusive stories.
-          </p>
         </div>
       </div>
 
       {showPremiumModal && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-5 backdrop-blur-sm">
-          <div className="w-full rounded-[1.8rem] border border-yellow-300/20 bg-[#1b100a]/95 p-5 shadow-2xl shadow-black/50">
+          <div className="w-full rounded-[1.7rem] border border-yellow-300/20 bg-[#1b100a]/95 p-5 shadow-2xl shadow-black/50 lg:rounded-[1.8rem]">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-yellow-300/25 bg-yellow-500/10 text-2xl">
               🔒
             </div>
