@@ -35,15 +35,16 @@ export default function Home() {
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage: "url('/bg-desktop.png')",
-          backgroundPosition: "center 46%",
+          backgroundPosition: "center 42%",
         }}
       />
 
-      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/8 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-b from-white/8 via-transparent to-black/18" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-black/5 to-transparent" />
 
-      <section className="relative z-10 flex h-full w-full items-center justify-center px-8 py-7">
-        <div className="flex h-[88vh] w-full max-w-[1460px] gap-8">
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.12] via-transparent to-black/10" />
+
+      <section className="relative z-10 flex h-full w-full items-center justify-center px-8 py-8">
+        <div className="flex w-full max-w-[1460px] items-start gap-8">
           <Sidebar
             books={books.map((book) => ({
               id: book.id,
@@ -77,11 +78,11 @@ export default function Home() {
               onRestart={restart}
             >
               <VoiceSelector
-  voices={voices}
-  selectedVoiceId={selectedVoiceId}
-  selectedVoiceName={selectedVoice.name}
-  onSelectVoice={setSelectedVoiceId}
-/>
+                voices={voices}
+                selectedVoiceId={selectedVoiceId}
+                selectedVoiceName={selectedVoice.name}
+                onSelectVoice={setSelectedVoiceId}
+              />
             </PlayerCard>
           </div>
         </div>

@@ -6,9 +6,7 @@ export function useAudioEngine(audioSrc?: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
-
   const [currentTime, setCurrentTime] = useState(0);
-
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
@@ -20,9 +18,14 @@ export function useAudioEngine(audioSrc?: string) {
 
     const audio = audioRef.current;
 
+    audio.pause();
     audio.src = audioSrc;
-
     audio.preload = "auto";
+    audio.load();
+
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration || 0);
@@ -44,47 +47,18 @@ export function useAudioEngine(audioSrc?: string) {
       setIsPlaying(false);
     };
 
-    audio.addEventListener(
-      "loadedmetadata",
-      handleLoadedMetadata
-    );
-
-    audio.addEventListener(
-      "timeupdate",
-      handleTimeUpdate
-    );
-
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("play", handlePlay);
-
     audio.addEventListener("pause", handlePause);
-
     audio.addEventListener("ended", handleEnded);
 
     return () => {
-      audio.removeEventListener(
-        "loadedmetadata",
-        handleLoadedMetadata
-      );
-
-      audio.removeEventListener(
-        "timeupdate",
-        handleTimeUpdate
-      );
-
-      audio.removeEventListener(
-        "play",
-        handlePlay
-      );
-
-      audio.removeEventListener(
-        "pause",
-        handlePause
-      );
-
-      audio.removeEventListener(
-        "ended",
-        handleEnded
-      );
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("ended", handleEnded);
     };
   }, [audioSrc]);
 
@@ -101,11 +75,14 @@ export function useAudioEngine(audioSrc?: string) {
   };
 
   const seek = (time: number) => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
 
-    audioRef.current.currentTime = time;
+    if (!audio) return;
 
-    setCurrentTime(time);
+    const safeTime = Math.max(0, time);
+
+    audio.currentTime = safeTime;
+    setCurrentTime(safeTime);
   };
 
   return {

@@ -1,24 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
 import { useAudioEngine } from "./useAudioEngine";
 
-const STORAGE_KEY = "ai-storyteller-player-engine-v2";
+const STORAGE_KEY = "ai-storyteller-player-engine-v3";
 
 function formatTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "0:00";
+  }
 
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
 
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  return `${minutes}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
 }
 
 export function usePlayer() {
   const books = useMemo(() => BOOKS, []);
   const voices = useMemo(() => VOICES, []);
+
+  const saveTimeoutRef =
+    useRef<NodeJS.Timeout | null>(null);
 
   const defaultBookId = String(books[0]?.id ?? "");
   const defaultVoiceId = String(voices[0]?.id ?? "");
@@ -78,14 +85,16 @@ export function usePlayer() {
     const saved = localStorage.getItem(STORAGE_KEY);
 
     if (!saved) {
-      const initialVoiceByBook: Record<string, string> = {};
+      const initialVoiceByBook: Record<string, string> =
+        {};
 
       books.forEach((book, index) => {
-        initialVoiceByBook[String(book.id)] = String(
-          voices[index]?.id ||
-            voices[0]?.id ||
-            ""
-        );
+        initialVoiceByBook[String(book.id)] =
+          String(
+            voices[index]?.id ||
+              voices[0]?.id ||
+              ""
+          );
       });
 
       setVoiceByBook(initialVoiceByBook);
@@ -162,13 +171,23 @@ export function usePlayer() {
   }, [trackKey, duration]);
 
   useEffect(() => {
-    if (!audioRef.current) return;
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
 
-    setProgressByTrack((prev) => ({
-      ...prev,
-      [trackKey]: currentTime,
-    }));
-  }, [currentTime, trackKey, audioRef]);
+    saveTimeoutRef.current = setTimeout(() => {
+      setProgressByTrack((prev) => ({
+        ...prev,
+        [trackKey]: currentTime,
+      }));
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [currentTime, trackKey]);
 
   const selectBook = (
     bookId: string | number

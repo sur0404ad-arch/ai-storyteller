@@ -6,6 +6,14 @@ export type VoiceId =
   | "olivia"
   | "sophia";
 
+export type BookAccess = "free" | "premium";
+
+export type BookCategory =
+  | "Detective"
+  | "Horror"
+  | "Romance"
+  | "Classic";
+
 export type BookSource = {
   name: "Project Gutenberg";
   type: "public-domain";
@@ -30,6 +38,10 @@ export type Book = {
   title: string;
   author: string;
   cover: string;
+  access: BookAccess;
+  isFeatured: boolean;
+  category: BookCategory;
+  description: string;
   sourceName: "Project Gutenberg";
   sourceType: "public-domain";
   source: BookSource;
@@ -52,9 +64,13 @@ export const BOOKS: Book[] = [
     title: "Sherlock Holmes",
     author: "Arthur Conan Doyle",
     cover: "/bg-main.png",
+    access: "free",
+    isFeatured: true,
+    category: "Detective",
+    description:
+      "A legendary detective collection built for cinematic listening.",
     sourceName: "Project Gutenberg",
     sourceType: "public-domain",
-
     source: {
       name: "Project Gutenberg",
       type: "public-domain",
@@ -64,7 +80,6 @@ export const BOOKS: Book[] = [
       catalogUrl:
         "https://www.gutenberg.org/ebooks/1661",
     },
-
     chapters: [
       {
         id: 1,
@@ -78,7 +93,6 @@ export const BOOKS: Book[] = [
         ],
         audioByVoice: GENERATED_AUDIO,
       },
-
       {
         id: 2,
         title: "Chapter II",
@@ -91,7 +105,6 @@ export const BOOKS: Book[] = [
         ],
         audioByVoice: GENERATED_AUDIO,
       },
-
       {
         id: 3,
         title: "Chapter III",
@@ -106,16 +119,19 @@ export const BOOKS: Book[] = [
       },
     ],
   },
-
   {
     id: 2,
     slug: "dracula",
     title: "Dracula",
     author: "Bram Stoker",
     cover: "/bg-main.png",
+    access: "free",
+    isFeatured: true,
+    category: "Horror",
+    description:
+      "A gothic classic with dark atmosphere and dramatic narration.",
     sourceName: "Project Gutenberg",
     sourceType: "public-domain",
-
     source: {
       name: "Project Gutenberg",
       type: "public-domain",
@@ -125,7 +141,6 @@ export const BOOKS: Book[] = [
       catalogUrl:
         "https://www.gutenberg.org/ebooks/345",
     },
-
     chapters: [
       {
         id: 1,
@@ -141,16 +156,19 @@ export const BOOKS: Book[] = [
       },
     ],
   },
-
   {
     id: 3,
     slug: "pride-and-prejudice",
     title: "Pride and Prejudice",
     author: "Jane Austen",
     cover: "/bg-main.png",
+    access: "free",
+    isFeatured: false,
+    category: "Romance",
+    description:
+      "A timeless romantic classic prepared for premium listening.",
     sourceName: "Project Gutenberg",
     sourceType: "public-domain",
-
     source: {
       name: "Project Gutenberg",
       type: "public-domain",
@@ -160,7 +178,6 @@ export const BOOKS: Book[] = [
       catalogUrl:
         "https://www.gutenberg.org/ebooks/1342",
     },
-
     chapters: [
       {
         id: 1,
