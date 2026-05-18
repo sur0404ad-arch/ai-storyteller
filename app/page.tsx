@@ -16,6 +16,7 @@ export default function Home() {
     selectedVoiceId,
     selectedChapterId,
     isPlaying,
+    isLoadingAudio,
     currentTime,
     duration,
     formattedCurrentTime,
@@ -64,6 +65,7 @@ export default function Home() {
               currentTime={currentTime}
               duration={duration}
               isPlaying={isPlaying}
+              isLoadingAudio={isLoadingAudio}
               selectedVoiceName={selectedVoice.name}
               sourceName="Project Gutenberg"
               sourceType="Public-Domain"
@@ -75,10 +77,11 @@ export default function Home() {
               onRestart={restart}
             >
               <VoiceSelector
-                voices={voices}
-                selectedVoiceId={selectedVoiceId}
-                onSelectVoice={setSelectedVoiceId}
-              />
+  voices={voices}
+  selectedVoiceId={selectedVoiceId}
+  selectedVoiceName={selectedVoice.name}
+  onSelectVoice={setSelectedVoiceId}
+/>
             </PlayerCard>
           </div>
         </div>

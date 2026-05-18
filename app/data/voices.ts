@@ -1,43 +1,43 @@
 export const VOICES = [
   {
     id: "michael",
-    name: "Michael",
+    name: "Adam",
     gender: "Male",
-    elevenlabsVoiceId: "michael-premium",
+    elevenlabsVoiceId: "wBXNqKUATyqu0RtYt25i",
   },
 
   {
     id: "james",
-    name: "James",
+    name: "Marcus",
     gender: "Male",
-    elevenlabsVoiceId: "james-premium",
+    elevenlabsVoiceId: "7Uu6s58Uu5fPHvCtI4QZ",
   },
 
   {
     id: "robert",
-    name: "Robert",
+    name: "Clyde",
     gender: "Male",
-    elevenlabsVoiceId: "robert-premium",
+    elevenlabsVoiceId: "wyWA56cQNU2KqUW4eCsI",
   },
 
   {
     id: "emma",
-    name: "Emma",
+    name: "Victoria",
     gender: "Female",
-    elevenlabsVoiceId: "emma-premium",
+    elevenlabsVoiceId: "qSeXEcewz7tA0Q0qk9fH",
   },
 
   {
     id: "olivia",
-    name: "Olivia",
+    name: "Brittney",
     gender: "Female",
-    elevenlabsVoiceId: "olivia-premium",
+    elevenlabsVoiceId: "pjcYQlDFKMbcOUp6F5GD",
   },
 
   {
     id: "sophia",
-    name: "Sophia",
+    name: "Tris",
     gender: "Female",
-    elevenlabsVoiceId: "sophia-premium",
+    elevenlabsVoiceId: "1WJaWI8vIQrJWzWEqG4i",
   },
 ];
