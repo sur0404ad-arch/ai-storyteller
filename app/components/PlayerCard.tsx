@@ -63,7 +63,7 @@ export default function PlayerCard({
         Now Playing
       </p>
 
-      <h1 className="pr-10 text-4xl font-semibold leading-[0.95] tracking-[-0.04em] lg:text-[3rem]">
+      <h1 className="max-w-full break-words text-4xl font-semibold leading-tight tracking-[-0.03em] lg:text-[3rem]">
         {title}
       </h1>
 

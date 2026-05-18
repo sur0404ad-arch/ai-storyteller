@@ -4,35 +4,25 @@ import { useEffect, useRef, useState } from "react";
 
 export function useAudioEngine(audioSrc?: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastAudioSrcRef = useRef<string>("");
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    if (!audioSrc) return;
-
     if (!audioRef.current) {
       audioRef.current = new Audio();
     }
 
     const audio = audioRef.current;
 
-    audio.pause();
-    audio.src = audioSrc;
-    audio.preload = "auto";
-    audio.load();
-
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-
     const handleLoadedMetadata = () => {
-      setDuration(audio.duration || 0);
+      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
     };
 
     const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
+      setCurrentTime(audio.currentTime || 0);
     };
 
     const handlePlay = () => {
@@ -54,19 +44,48 @@ export function useAudioEngine(audioSrc?: string) {
     audio.addEventListener("ended", handleEnded);
 
     return () => {
+      audio.pause();
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handleEnded);
     };
+  }, []);
+
+  useEffect(() => {
+    if (!audioSrc || !audioRef.current) return;
+
+    const audio = audioRef.current;
+
+    if (lastAudioSrcRef.current === audioSrc) return;
+
+    lastAudioSrcRef.current = audioSrc;
+
+    audio.pause();
+    audio.src = audioSrc;
+    audio.preload = "metadata";
+    audio.load();
+
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
   }, [audioSrc]);
 
   const play = async () => {
+    const audio = audioRef.current;
+
+    if (!audio || !audioSrc) return;
+
     try {
-      await audioRef.current?.play();
+      if (audio.src !== new URL(audioSrc, window.location.origin).href) {
+        audio.src = audioSrc;
+        audio.load();
+      }
+
+      await audio.play();
     } catch (error) {
-      console.error(error);
+      console.error("Audio play failed:", error);
     }
   };
 
