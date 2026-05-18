@@ -5,7 +5,7 @@ import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
 import { useAudioEngine } from "./useAudioEngine";
 
-const STORAGE_KEY = "ai-storyteller-player-engine-v4";
+const STORAGE_KEY = "ai-storyteller-player-engine-v5";
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) {
@@ -27,8 +27,6 @@ export function usePlayer() {
   const saveTimeoutRef =
     useRef<NodeJS.Timeout | null>(null);
 
-  const userUnlockedAudioRef = useRef(false);
-
   const defaultBookId = String(books[0]?.id ?? "");
   const defaultVoiceId = String(voices[0]?.id ?? "");
 
@@ -47,6 +45,9 @@ export function usePlayer() {
 
   const [progressByTrack, setProgressByTrack] =
     useState<Record<string, number>>({});
+
+  const [isLoadingAudio, setIsLoadingAudio] =
+    useState(false);
 
   const selectedBook =
     books.find(
@@ -191,30 +192,6 @@ export function usePlayer() {
     };
   }, [currentTime, trackKey]);
 
-  const unlockMobileAudio = async () => {
-    if (userUnlockedAudioRef.current) return;
-
-    try {
-      const audio = audioRef.current;
-
-      if (!audio) return;
-
-      audio.muted = true;
-
-      await audio.play();
-
-      audio.pause();
-
-      audio.currentTime = 0;
-
-      audio.muted = false;
-
-      userUnlockedAudioRef.current = true;
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const selectBook = async (
     bookId: string | number
   ) => {
@@ -256,16 +233,36 @@ export function usePlayer() {
 
   const togglePlay = async () => {
     try {
-      await unlockMobileAudio();
+      setIsLoadingAudio(true);
 
-      if (isPlaying) {
-        pause();
+      const audio = audioRef.current;
+
+      if (!audio) {
+        setIsLoadingAudio(false);
         return;
       }
 
-      await play();
+      if (isPlaying) {
+        pause();
+        setIsLoadingAudio(false);
+        return;
+      }
+
+      audio.pause();
+
+      audio.src = currentAudio;
+
+      audio.currentTime = 0;
+
+      audio.load();
+
+      await audio.play();
+
+      setIsLoadingAudio(false);
     } catch (error) {
       console.error(error);
+
+      setIsLoadingAudio(false);
     }
   };
 
@@ -295,7 +292,7 @@ export function usePlayer() {
     setSelectedVoiceId: selectVoice,
     setSelectedChapterId: selectChapter,
     isPlaying,
-    isLoadingAudio: false,
+    isLoadingAudio,
     currentTime,
     duration,
     formattedCurrentTime:
