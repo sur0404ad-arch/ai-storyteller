@@ -2,23 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 
+let globalAudio: HTMLAudioElement | null = null;
+
 export function useAudioEngine(audioSrc?: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const lastAudioSrcRef = useRef<string>("");
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
+    if (!globalAudio) {
+      globalAudio = new Audio();
+      globalAudio.preload = "auto";
     }
+
+    audioRef.current = globalAudio;
 
     const audio = audioRef.current;
 
+    if (!audio) return;
+
     const handleLoadedMetadata = () => {
-      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+      setDuration(audio.duration || 0);
     };
 
     const handleTimeUpdate = () => {
@@ -44,7 +50,6 @@ export function useAudioEngine(audioSrc?: string) {
     audio.addEventListener("ended", handleEnded);
 
     return () => {
-      audio.pause();
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("play", handlePlay);
@@ -54,38 +59,32 @@ export function useAudioEngine(audioSrc?: string) {
   }, []);
 
   useEffect(() => {
-    if (!audioSrc || !audioRef.current) return;
-
-    const audio = audioRef.current;
-
-    if (lastAudioSrcRef.current === audioSrc) return;
-
-    lastAudioSrcRef.current = audioSrc;
-
-    audio.pause();
-    audio.src = audioSrc;
-    audio.preload = "metadata";
-    audio.load();
-
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-  }, [audioSrc]);
-
-  const play = async () => {
     const audio = audioRef.current;
 
     if (!audio || !audioSrc) return;
 
+    if (audio.src !== window.location.origin + audioSrc) {
+      audio.pause();
+      audio.src = audioSrc;
+      audio.load();
+
+      setCurrentTime(0);
+      setDuration(0);
+      setIsPlaying(false);
+    }
+  }, [audioSrc]);
+
+  const play = async () => {
     try {
-      if (audio.src !== new URL(audioSrc, window.location.origin).href) {
-        audio.src = audioSrc;
-        audio.load();
-      }
+      const audio = audioRef.current;
+
+      if (!audio) return;
 
       await audio.play();
+
+      setIsPlaying(true);
     } catch (error) {
-      console.error("Audio play failed:", error);
+      console.error(error);
     }
   };
 
@@ -98,10 +97,8 @@ export function useAudioEngine(audioSrc?: string) {
 
     if (!audio) return;
 
-    const safeTime = Math.max(0, time);
-
-    audio.currentTime = safeTime;
-    setCurrentTime(safeTime);
+    audio.currentTime = time;
+    setCurrentTime(time);
   };
 
   return {
