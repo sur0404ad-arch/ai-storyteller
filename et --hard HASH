@@ -1,0 +1,67 @@
+[33m7336e4d0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mstable-desktop-playback[m[33m)[m add real book text loader and Dracula runtime text
+[33mf320350c[m stable narrator atmosphere foundation
+[33mc18b7ae1[m stable desktop retention layout
+[33m689501d0[m stable bookmarks clear all
+[33m2d8529a5[m stable continue listening and bookmarks
+[33m821ca796[m stable isolated volume controller
+[33me53e7eeb[m stable modular architecture baseline
+[33m6472e53e[m[33m ([m[1;32mstable-supabase-baseline[m[33m)[m stable supabase integration baseline
+[33m94aff6b9[m safe bookmark timestamp seek
+[33m41336148[m premium sidebar borders and clean controls
+[33m5e71c1d9[m enable chapter navigation buttons
+[33m18ad2941[m clickable playback shortcuts
+[33m26cfb383[m sleep timer control
+[33m305bfe7c[m playback speed control
+[33m44a7d7a6[m desktop volume control
+[33mfcf85118[m stable audio player baseline
+[33me89a8598[m[33m ([m[1;32mstable-desktop-voice-layout[m[33m)[m lock stable desktop voice layout
+[33ma519e774[m[33m ([m[1;32mmain[m[33m)[m stable desktop playback baseline
+[33m4e33acd8[m[33m ([m[1;31morigin/main[m[33m)[m mobile player work in progress
+[33m3103e154[m fix direct mobile playback
+[33m0c752c04[m fix mobile audio engine types
+[33m6526af9a[m fix mobile audio playback
+[33m040168d0[m fix mobile audio engine
+[33m344ace5a[m stable desktop + mobile premium ui freeze
+[33md727ad68[m stable audio system and library update
+[33m0bd129f2[m stable global audio player baseline
+[33me1010e17[m FINAL desktop cinematic glass UI freeze
+[33m8eb62709[m FINAL desktop cinematic glass UI freeze
+[33mf02ab0f5[m freeze final cinematic desktop UI
+[33m206cc414[m fix stable player progress and source badge
+[33mcb94ff97[m add public domain source system
+[33ma782d378[m remove mobile player blur completely
+[33m207fcae4[m reduce mobile player blur
+[33m67cf86c6[m add content architecture plan
+[33m299cb762[m update mobile player glass style
+[33mb0ea6c0c[m compact mobile player card
+[33m758c5598[m restore cinematic background
+[33m0f02d576[m fix mobile no scroll layout
+[33m85c0e0ca[m fix per book voice selection
+[33m6844e923[m refactor player into components
+[33m54516b38[m fix mobile fullscreen layout
+[33m8fa02144[m premium player stable
+[33m0d6d9b6d[m stable player progress persistence
+[33m2ee94524[m fix audio playback
+[33m34068d4d[m mobile audio fix
+[33m0451b09a[m player fixes
+[33m5ee25996[m premium player stable
+[33mb46cc148[m restore player
+[33m8cd319f1[m fix player
+[33m5d6fea3d[m fix book audio
+[33m7d1ef0f4[m fix voices
+[33m1861ab30[m connect book specific audio
+[33m75144b46[m connect real ai voices
+[33mcac36554[m add voice selector
+[33m037bbd8e[m add per book captions and audio source
+[33m3d02d299[m add independent book listening sessions
+[33mf6dcfd38[m tighten one screen mobile layout
+[33m8ae2637a[m fix audio playback interruption
+[33m4f54442c[m replace paragraph with live captions
+[33m39c5dc4c[m add sticky mobile mini player
+[33m04ea02ba[m add persistent listening progress
+[33m46f03639[m add persistent listening progress
+[33m1eec1826[m move premium icon to app root
+[33m5d5c1302[m add mobile app metadata
+[33mbe1c3753[m improve global mobile polish
+[33m528836b6[m improve mobile cinematic brightness
+[33m9dce7069[m first production build

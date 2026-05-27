@@ -58,7 +58,7 @@ export default function PlayerCard({
   children,
 }: PlayerCardProps) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-black/10 p-5 shadow-2xl shadow-black/30 backdrop-blur-[2px] lg:rounded-[2rem] lg:p-6">
+    <div className="relative flex h-full flex-col rounded-2xl border border-white/10 bg-black/10 p-5 pb-10 shadow-2xl shadow-black/30 backdrop-blur-[2px] lg:rounded-[2rem] lg:p-6 lg:pb-12">
       <p className="mb-2 text-[10px] uppercase tracking-[0.26em] text-orange-300/75">
         Now Playing
       </p>
@@ -67,15 +67,10 @@ export default function PlayerCard({
         {title}
       </h1>
 
-      <p className="mt-3 text-sm text-white/55">
-        {author}
-      </p>
+      <p className="mt-3 text-sm text-white/55">{author}</p>
 
       <div className="mt-3">
-        <SourceBadge
-          sourceName={sourceName}
-          sourceType={sourceType}
-        />
+        <SourceBadge sourceName={sourceName} sourceType={sourceType} />
       </div>
 
       <p className="mt-4 text-[10px] uppercase tracking-[0.2em] text-orange-300/70">
@@ -101,6 +96,7 @@ export default function PlayerCard({
 
       <div className="mt-4 flex flex-wrap gap-3">
         <button
+          type="button"
           onClick={onPreviousChapter}
           disabled={!hasPreviousChapter || isLoadingAudio}
           className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
@@ -109,18 +105,16 @@ export default function PlayerCard({
         </button>
 
         <button
+          type="button"
           onClick={onTogglePlay}
           disabled={isLoadingAudio}
           className="rounded-full bg-orange-500 px-7 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-950/40 transition hover:scale-[1.02] hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isLoadingAudio
-            ? "Generating Voice..."
-            : isPlaying
-            ? "Pause"
-            : "Play"}
+          {isLoadingAudio ? "Loading..." : isPlaying ? "Pause" : "Play"}
         </button>
 
         <button
+          type="button"
           onClick={onNextChapter}
           disabled={!hasNextChapter || isLoadingAudio}
           className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm text-white/70 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
@@ -129,6 +123,7 @@ export default function PlayerCard({
         </button>
 
         <button
+          type="button"
           onClick={onRestart}
           disabled={isLoadingAudio}
           className="rounded-full border border-white/10 bg-white/5 px-6 py-2 text-sm text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
@@ -156,6 +151,7 @@ export default function PlayerCard({
               return (
                 <button
                   key={chapter.id}
+                  type="button"
                   onClick={() => onSelectChapter(chapter.id)}
                   disabled={isLoadingAudio}
                   className={`min-w-[170px] rounded-2xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -182,9 +178,7 @@ export default function PlayerCard({
         </div>
       )}
 
-      <div className="mt-5">
-        {children}
-      </div>
+      <div className="mt-6 pb-4">{children}</div>
     </div>
   );
 }

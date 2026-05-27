@@ -1,0 +1,10 @@
+{
+  "id": 10,
+  "textFile": "chunk-10.txt",
+  "mp3": "chunk-10.mp3",
+  "audioPath": "/audio/dracula/chunk-10.mp3",
+  "status": "ready",
+  "textLength": 3235,
+  "fileSize": 3532635,
+  "generatedAt": "2026-05-24T15:32:09.834Z"
+}

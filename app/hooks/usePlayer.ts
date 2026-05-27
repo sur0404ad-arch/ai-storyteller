@@ -1,19 +1,95 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import { BOOKS } from "../data/books";
 import { VOICES } from "../data/voices";
+
+import {
+  Bookmark,
+  saveBookmark,
+} from "../lib/bookmarks/bookmarkController";
+
+import {
+  getPlaybackSession,
+  savePlaybackSession,
+} from "../lib/playback/playbackSessionManager";
+
 import { useAudioEngine } from "./useAudioEngine";
 
-const STORAGE_KEY = "ai-storyteller-player-engine-v12";
+const STORAGE_KEY = "ai-storyteller-player-engine-v6";
+
+function clampToDuration(time: number, duration: number) {
+  if (!Number.isFinite(time) || time <= 0) {
+    return 0;
+  }
+
+  if (duration > 0) {
+    return Math.min(Math.max(0, time), duration);
+  }
+
+  return Math.max(0, time);
+}
 
 function formatTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return "0:00";
+  }
 
   const minutes = Math.floor(seconds / 60);
+
   const remainingSeconds = Math.floor(seconds % 60);
 
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  return `${minutes}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
+}
+
+function waitForAudioSeeked(
+  audio: HTMLAudioElement,
+  targetTime: number
+) {
+  const safeDuration = Number.isFinite(audio.duration)
+    ? audio.duration
+    : 0;
+
+  const safeTarget = clampToDuration(targetTime, safeDuration);
+
+  return new Promise<void>((resolve) => {
+    const epsilon = 0.15;
+
+    if (
+      audio.readyState >= 1 &&
+      Math.abs(audio.currentTime - safeTarget) < epsilon
+    ) {
+      resolve();
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      resolve();
+    }, 3000);
+
+    const onSeeked = () => {
+      cleanup();
+      resolve();
+    };
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      audio.removeEventListener("seeked", onSeeked);
+    };
+
+    audio.addEventListener("seeked", onSeeked, { once: true });
+    audio.currentTime = safeTarget;
+  });
 }
 
 export function usePlayer() {
@@ -21,103 +97,215 @@ export function usePlayer() {
   const voices = useMemo(() => VOICES, []);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const progressByTrackRef = useRef<Record<string, number>>({});
-  const lastChapterByBookRef = useRef<Record<string, number>>({});
-  const voiceByBookRef = useRef<Record<string, string>>({});
-  const actionLockRef = useRef(false);
+
+  const restoredTrackRef = useRef("");
+
+  const [dragValue, setDragValue] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+
+  const dragValueRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const isSeekingRef = useRef(false);
+  const wasPlayingBeforeDragRef = useRef(false);
+  const seekCommitGenerationRef = useRef(0);
+  const releaseHandledRef = useRef(false);
 
   const defaultBookId = String(books[0]?.id ?? "");
   const defaultVoiceId = String(voices[0]?.id ?? "");
 
-  const [selectedBookId, setSelectedBookId] = useState(defaultBookId);
-  const [selectedChapterId, setSelectedChapterId] = useState(1);
-  const [voiceByBook, setVoiceByBook] = useState<Record<string, string>>({});
-  const [lastChapterByBook, setLastChapterByBook] = useState<Record<string, number>>({});
-  const [progressByTrack, setProgressByTrack] = useState<Record<string, number>>({});
+  const [selectedBookId, setSelectedBookIdState] =
+    useState(defaultBookId);
+
+  const [selectedChapterId, setSelectedChapterIdState] =
+    useState(1);
+
+  const [voiceByBook, setVoiceByBook] = useState<
+    Record<string, string>
+  >({});
+
+  const [lastChapterByBook, setLastChapterByBook] =
+    useState<Record<string, number>>({});
+
+  const [progressByTrack, setProgressByTrack] =
+    useState<Record<string, number>>({});
 
   const selectedBook =
-    books.find((book) => String(book.id) === selectedBookId) || books[0];
+    books.find(
+      (book) => String(book.id) === selectedBookId
+    ) || books[0];
 
   const selectedVoiceId =
-    voiceByBook[selectedBookId] ||
-    voiceByBookRef.current[selectedBookId] ||
-    defaultVoiceId;
+    voiceByBook[selectedBookId] || defaultVoiceId;
 
   const selectedVoice =
-    voices.find((voice) => String(voice.id) === String(selectedVoiceId)) ||
-    voices[0];
+    voices.find(
+      (voice) => String(voice.id) === selectedVoiceId
+    ) || voices[0];
 
   const currentChapter =
-    selectedBook?.chapters?.find((chapter) => chapter.id === selectedChapterId) ||
-    selectedBook?.chapters?.[0];
+    selectedBook?.chapters?.find(
+      (chapter) => chapter.id === selectedChapterId
+    ) || selectedBook?.chapters?.[0];
 
   const currentAudio =
     currentChapter?.audioByVoice?.[
       selectedVoiceId as keyof typeof currentChapter.audioByVoice
-    ] || "";
+    ] ||
+    Object.values(currentChapter?.audioByVoice || {})[0] ||
+    "";
 
-  const trackKey = `${selectedBookId}-${selectedChapterId}-${selectedVoiceId}`;
+  const progressKey =
+    `${selectedBookId}-${selectedChapterId}`;
+
+  const sourceKey =
+    `${selectedBookId}-${selectedChapterId}-${selectedVoiceId}-${currentAudio}`;
 
   const {
     audioRef,
-    isReady,
     isPlaying,
+    isReady,
     currentTime,
     duration,
+    playbackRate,
+    setPlaybackRate,
     play,
     pause,
     seek,
     load,
   } = useAudioEngine(currentAudio);
 
-  function persistNow(
-    nextSelectedBookId = selectedBookId,
-    nextSelectedChapterId = selectedChapterId,
-    nextVoiceByBook = voiceByBookRef.current,
-    nextLastChapterByBook = lastChapterByBookRef.current,
-    nextProgressByTrack = progressByTrackRef.current
-  ) {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        selectedBookId: nextSelectedBookId,
-        selectedChapterId: nextSelectedChapterId,
-        voiceByBook: nextVoiceByBook,
-        lastChapterByBook: nextLastChapterByBook,
-        progressByTrack: nextProgressByTrack,
-      })
-    );
-  }
+  const isScrubbing = isDragging || isSeeking;
 
-  function saveCurrentProgress() {
-    const audioTime = audioRef.current?.currentTime ?? currentTime;
+  const displayTime = isScrubbing ? dragValue : currentTime;
 
-    if (!Number.isFinite(audioTime)) return;
+  useEffect(() => {
+    if (isScrubbing) {
+      return;
+    }
 
-    const nextProgressByTrack = {
-      ...progressByTrackRef.current,
-      [trackKey]: audioTime,
+    setDragValue(currentTime);
+  }, [currentTime, isScrubbing]);
+
+  const confirmAudioTime = useCallback(
+    async (value: number) => {
+      const audio = audioRef.current;
+
+      if (!audio) {
+        return value;
+      }
+
+      const safeDuration = Number.isFinite(audio.duration)
+        ? audio.duration
+        : 0;
+
+      const safeValue = clampToDuration(value, safeDuration);
+
+      await waitForAudioSeeked(audio, safeValue);
+
+      if (Math.abs(audio.currentTime - safeValue) > 0.15) {
+        audio.currentTime = safeValue;
+        await waitForAudioSeeked(audio, safeValue);
+      }
+
+      return Number.isFinite(audio.currentTime)
+        ? audio.currentTime
+        : safeValue;
+    },
+    [audioRef]
+  );
+
+  const commitSeek = useCallback(
+    async (value: number) => {
+      if (isSeekingRef.current) {
+        return;
+      }
+
+      const commitId = seekCommitGenerationRef.current + 1;
+      seekCommitGenerationRef.current = commitId;
+
+      isSeekingRef.current = true;
+      setIsSeeking(true);
+
+      const shouldResume = wasPlayingBeforeDragRef.current;
+
+      try {
+        pause();
+
+        await seek(value);
+
+        if (commitId !== seekCommitGenerationRef.current) {
+          return;
+        }
+
+        const confirmedTime = Number.isFinite(audioRef.current?.currentTime)
+          ? (audioRef.current?.currentTime as number)
+          : value;
+
+        setProgressByTrack((prev) => ({
+          ...prev,
+          [progressKey]: confirmedTime,
+        }));
+
+        setDragValue(confirmedTime);
+
+        if (shouldResume) {
+          await play(value);
+        }
+      } finally {
+        if (commitId === seekCommitGenerationRef.current) {
+          isSeekingRef.current = false;
+          setIsSeeking(false);
+          isDraggingRef.current = false;
+          setIsDragging(false);
+          wasPlayingBeforeDragRef.current = false;
+        }
+      }
+    },
+    [seek, pause, play, progressKey, confirmAudioTime]
+  );
+
+  const handleSliderChange = useCallback(
+    (value: number) => {
+      if (!isDraggingRef.current) {
+        wasPlayingBeforeDragRef.current = isPlaying;
+        releaseHandledRef.current = false;
+        pause();
+        isDraggingRef.current = true;
+        setIsDragging(true);
+      }
+
+      dragValueRef.current = value;
+      setDragValue(value);
+    },
+    [isPlaying, pause]
+  );
+
+  useEffect(() => {
+    if (!isDragging || isSeeking) {
+      return;
+    }
+
+    const onRelease = () => {
+      if (!isDraggingRef.current || releaseHandledRef.current) {
+        return;
+      }
+
+      releaseHandledRef.current = true;
+      isDraggingRef.current = false;
+      setIsDragging(false);
+
+      void commitSeek(dragValueRef.current);
     };
 
-    const nextLastChapterByBook = {
-      ...lastChapterByBookRef.current,
-      [selectedBookId]: selectedChapterId,
+    window.addEventListener("pointerup", onRelease);
+    window.addEventListener("mouseup", onRelease);
+
+    return () => {
+      window.removeEventListener("pointerup", onRelease);
+      window.removeEventListener("mouseup", onRelease);
     };
-
-    progressByTrackRef.current = nextProgressByTrack;
-    lastChapterByBookRef.current = nextLastChapterByBook;
-
-    setProgressByTrack(nextProgressByTrack);
-    setLastChapterByBook(nextLastChapterByBook);
-
-    persistNow(
-      selectedBookId,
-      selectedChapterId,
-      voiceByBookRef.current,
-      nextLastChapterByBook,
-      nextProgressByTrack
-    );
-  }
+  }, [isDragging, isSeeking, commitSeek]);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -127,39 +315,46 @@ export function usePlayer() {
 
       books.forEach((book, index) => {
         initialVoiceByBook[String(book.id)] = String(
-          voices[index]?.id || voices[0]?.id || ""
+          voices[index]?.id ||
+            voices[0]?.id ||
+            ""
         );
       });
 
-      voiceByBookRef.current = initialVoiceByBook;
       setVoiceByBook(initialVoiceByBook);
+
       return;
     }
 
     try {
       const parsed = JSON.parse(saved);
 
+      if (parsed.selectedBookId) {
+        setSelectedBookIdState(
+          String(parsed.selectedBookId)
+        );
+      }
+
+      if (parsed.selectedChapterId) {
+        setSelectedChapterIdState(
+          Number(parsed.selectedChapterId)
+        );
+      }
+
       if (parsed.voiceByBook) {
-        voiceByBookRef.current = parsed.voiceByBook;
         setVoiceByBook(parsed.voiceByBook);
       }
 
       if (parsed.lastChapterByBook) {
-        lastChapterByBookRef.current = parsed.lastChapterByBook;
-        setLastChapterByBook(parsed.lastChapterByBook);
+        setLastChapterByBook(
+          parsed.lastChapterByBook
+        );
       }
 
       if (parsed.progressByTrack) {
-        progressByTrackRef.current = parsed.progressByTrack;
-        setProgressByTrack(parsed.progressByTrack);
-      }
-
-      if (parsed.selectedBookId) {
-        setSelectedBookId(String(parsed.selectedBookId));
-      }
-
-      if (parsed.selectedChapterId) {
-        setSelectedChapterId(Number(parsed.selectedChapterId));
+        setProgressByTrack(
+          parsed.progressByTrack
+        );
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
@@ -167,19 +362,41 @@ export function usePlayer() {
   }, [books, voices]);
 
   useEffect(() => {
-    voiceByBookRef.current = voiceByBook;
-  }, [voiceByBook]);
+    const session = getPlaybackSession();
+
+    if (!session) return;
+
+    setSelectedBookIdState(session.currentBookId);
+
+    setSelectedChapterIdState(
+      session.currentChapterId
+    );
+
+    setVoiceByBook((prev) => ({
+      ...prev,
+      [session.currentBookId]:
+        session.currentVoiceId,
+    }));
+
+    setProgressByTrack((prev) => ({
+      ...prev,
+      [
+        `${session.currentBookId}-${session.currentChapterId}`
+      ]: session.currentTime,
+    }));
+  }, []);
 
   useEffect(() => {
-    progressByTrackRef.current = progressByTrack;
-  }, [progressByTrack]);
-
-  useEffect(() => {
-    lastChapterByBookRef.current = lastChapterByBook;
-  }, [lastChapterByBook]);
-
-  useEffect(() => {
-    persistNow();
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        selectedBookId,
+        selectedChapterId,
+        voiceByBook,
+        lastChapterByBook,
+        progressByTrack,
+      })
+    );
   }, [
     selectedBookId,
     selectedChapterId,
@@ -189,209 +406,221 @@ export function usePlayer() {
   ]);
 
   useEffect(() => {
-    if (!currentAudio) return;
+    if (isScrubbing) {
+      return;
+    }
 
-    const savedProgress = progressByTrackRef.current[trackKey] || 0;
-
-    load(currentAudio, savedProgress);
-  }, [trackKey, currentAudio, load]);
+    savePlaybackSession({
+      currentBookId: selectedBookId,
+      currentChapterId: selectedChapterId,
+      currentVoiceId: selectedVoiceId,
+      currentTime,
+      updatedAt: Date.now(),
+    });
+  }, [
+    selectedBookId,
+    selectedChapterId,
+    selectedVoiceId,
+    currentTime,
+    isScrubbing,
+  ]);
 
   useEffect(() => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    if (!currentAudio) return;
+
+    if (restoredTrackRef.current === sourceKey) {
+      return;
+    }
+
+    if (isScrubbing) {
+      return;
+    }
+
+    restoredTrackRef.current = sourceKey;
+
+    const savedProgress =
+      progressByTrack[progressKey] || 0;
+
+    load(currentAudio, {
+      preserveTime: true,
+      startAt: savedProgress,
+      autoplay: isPlaying,
+    });
+  }, [
+    currentAudio,
+    sourceKey,
+    progressKey,
+    progressByTrack,
+    load,
+    isPlaying,
+    isScrubbing,
+  ]);
+
+  useEffect(() => {
+    if (isScrubbing) {
+      return;
+    }
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
 
     saveTimeoutRef.current = setTimeout(() => {
-      const audioTime = audioRef.current?.currentTime ?? currentTime;
-
-      if (!Number.isFinite(audioTime)) return;
-
-      const nextProgressByTrack = {
-        ...progressByTrackRef.current,
-        [trackKey]: audioTime,
-      };
-
-      progressByTrackRef.current = nextProgressByTrack;
-      setProgressByTrack(nextProgressByTrack);
-
-      persistNow(
-        selectedBookId,
-        selectedChapterId,
-        voiceByBookRef.current,
-        lastChapterByBookRef.current,
-        nextProgressByTrack
-      );
+      setProgressByTrack((prev) => ({
+        ...prev,
+        [progressKey]: currentTime,
+      }));
     }, 500);
 
     return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    };
-  }, [currentTime, trackKey, selectedBookId, selectedChapterId]);
-
-  const selectBook = async (bookId: string | number) => {
-    if (actionLockRef.current) return;
-
-    actionLockRef.current = true;
-
-    try {
-      saveCurrentProgress();
-      pause();
-
-      const nextBookId = String(bookId);
-      const restoredChapter = lastChapterByBookRef.current[nextBookId] || 1;
-      const restoredVoice = voiceByBookRef.current[nextBookId] || defaultVoiceId;
-
-      const restoredTrackKey = `${nextBookId}-${restoredChapter}-${restoredVoice}`;
-      const restoredProgress = progressByTrackRef.current[restoredTrackKey] || 0;
-
-      setSelectedBookId(nextBookId);
-      setSelectedChapterId(restoredChapter);
-
-      const nextBook =
-        books.find((book) => String(book.id) === nextBookId) || books[0];
-
-      const nextChapter =
-        nextBook?.chapters?.find((chapter) => chapter.id === restoredChapter) ||
-        nextBook?.chapters?.[0];
-
-      const nextAudio =
-        nextChapter?.audioByVoice?.[
-          restoredVoice as keyof typeof nextChapter.audioByVoice
-        ] || "";
-
-      if (nextAudio) await load(nextAudio, restoredProgress);
-    } finally {
-      setTimeout(() => {
-        actionLockRef.current = false;
-      }, 150);
-    }
-  };
-
-  const selectChapter = async (chapterId: number) => {
-    if (actionLockRef.current) return;
-
-    actionLockRef.current = true;
-
-    try {
-      saveCurrentProgress();
-      pause();
-
-      const nextLastChapterByBook = {
-        ...lastChapterByBookRef.current,
-        [selectedBookId]: chapterId,
-      };
-
-      lastChapterByBookRef.current = nextLastChapterByBook;
-      setLastChapterByBook(nextLastChapterByBook);
-      setSelectedChapterId(chapterId);
-
-      const restoredTrackKey = `${selectedBookId}-${chapterId}-${selectedVoiceId}`;
-      const restoredProgress = progressByTrackRef.current[restoredTrackKey] || 0;
-
-      const nextChapter =
-        selectedBook?.chapters?.find((chapter) => chapter.id === chapterId) ||
-        selectedBook?.chapters?.[0];
-
-      const nextAudio =
-        nextChapter?.audioByVoice?.[
-          selectedVoiceId as keyof typeof nextChapter.audioByVoice
-        ] || "";
-
-      if (nextAudio) await load(nextAudio, restoredProgress);
-    } finally {
-      setTimeout(() => {
-        actionLockRef.current = false;
-      }, 150);
-    }
-  };
-
-  const selectVoice = async (voiceId: string | number) => {
-    if (actionLockRef.current) return;
-
-    actionLockRef.current = true;
-
-    try {
-      saveCurrentProgress();
-
-      const nextVoiceId = String(voiceId);
-
-      const nextVoiceByBook = {
-        ...voiceByBookRef.current,
-        [selectedBookId]: nextVoiceId,
-      };
-
-      voiceByBookRef.current = nextVoiceByBook;
-      setVoiceByBook(nextVoiceByBook);
-
-      const restoredTrackKey = `${selectedBookId}-${selectedChapterId}-${nextVoiceId}`;
-      const restoredProgress = progressByTrackRef.current[restoredTrackKey] || 0;
-
-      const nextAudio =
-        currentChapter?.audioByVoice?.[
-          nextVoiceId as keyof typeof currentChapter.audioByVoice
-        ] || "";
-
-      if (!nextAudio) return;
-
-      const wasPlaying = isPlaying;
-
-      pause();
-      await load(nextAudio, restoredProgress);
-
-      if (wasPlaying) await play(restoredProgress);
-    } finally {
-      setTimeout(() => {
-        actionLockRef.current = false;
-      }, 150);
-    }
-  };
-
-  const togglePlay = async () => {
-    if (actionLockRef.current) return;
-
-    actionLockRef.current = true;
-
-    try {
-      if (isPlaying) {
-        saveCurrentProgress();
-        pause();
-        return;
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
-
-      const savedProgress = progressByTrackRef.current[trackKey] || 0;
-
-      if (currentAudio) await load(currentAudio, savedProgress);
-
-      await play(savedProgress);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setTimeout(() => {
-        actionLockRef.current = false;
-      }, 250);
-    }
-  };
-
-  const handleSeek = (value: number) => {
-    seek(value);
-
-    const nextProgressByTrack = {
-      ...progressByTrackRef.current,
-      [trackKey]: value,
     };
+  }, [currentTime, progressKey, isScrubbing]);
 
-    progressByTrackRef.current = nextProgressByTrack;
-    setProgressByTrack(nextProgressByTrack);
+  const setSelectedBookId = (
+    bookId: string | number
+  ) => {
+    const nextBookId = String(bookId);
 
-    persistNow(
-      selectedBookId,
-      selectedChapterId,
-      voiceByBookRef.current,
-      lastChapterByBookRef.current,
-      nextProgressByTrack
+    const restoredChapter =
+      lastChapterByBook[nextBookId] || 1;
+
+    setSelectedBookIdState(nextBookId);
+
+    setSelectedChapterIdState(
+      restoredChapter
     );
   };
 
+  const setSelectedChapterId = (
+    chapterId: number
+  ) => {
+    setSelectedChapterIdState(chapterId);
+
+    setLastChapterByBook((prev) => ({
+      ...prev,
+      [selectedBookId]: chapterId,
+    }));
+  };
+
+  const setSelectedVoiceId = (
+    voiceId: string | number
+  ) => {
+    const nextVoiceId = String(voiceId);
+
+    setVoiceByBook((prev) => ({
+      ...prev,
+      [selectedBookId]: nextVoiceId,
+    }));
+  };
+
+  const togglePlay = async () => {
+    if (isPlaying) {
+      pause();
+      return;
+    }
+
+    if (currentAudio) {
+      await load(currentAudio, {
+        preserveTime: true,
+        startAt:
+          progressByTrack[progressKey] ||
+          currentTime,
+        autoplay: true,
+      });
+
+      return;
+    }
+
+    await play();
+  };
+
+  const handleSeek = useCallback(
+    (value: number) => {
+      seekCommitGenerationRef.current += 1;
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      wasPlayingBeforeDragRef.current = false;
+      void commitSeek(value);
+    },
+    [commitSeek]
+  );
+
   const restart = () => {
-    handleSeek(0);
+    seekCommitGenerationRef.current += 1;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    wasPlayingBeforeDragRef.current = false;
+    void commitSeek(0);
+  };
+
+  const createBookmark = (label?: string) => {
+    const bookmark: Bookmark = {
+      id: crypto.randomUUID(),
+
+      bookId: selectedBookId,
+
+      chapterId: selectedChapterId,
+
+      timestamp: displayTime,
+
+      label:
+        label ||
+        `${selectedBook.title} — ${
+          currentChapter?.title || "Moment"
+        }`,
+
+      createdAt: Date.now(),
+    };
+
+    saveBookmark(bookmark);
+  };
+
+  const jumpToBookmark = async (
+    bookmark: Bookmark
+  ) => {
+    const targetBook =
+      books.find(
+        (book) =>
+          String(book.id) === bookmark.bookId
+      ) || books[0];
+
+    const targetVoiceId =
+      voiceByBook[bookmark.bookId] ||
+      defaultVoiceId;
+
+    const targetChapter =
+      targetBook?.chapters?.find(
+        (chapter) =>
+          chapter.id === bookmark.chapterId
+      ) || targetBook?.chapters?.[0];
+
+    const targetAudio =
+      targetChapter?.audioByVoice?.[
+        targetVoiceId as keyof typeof targetChapter.audioByVoice
+      ] ||
+      Object.values(
+        targetChapter?.audioByVoice || {}
+      )[0] ||
+      "";
+
+    if (!targetAudio) return;
+
+    setSelectedBookIdState(
+      bookmark.bookId
+    );
+
+    setSelectedChapterIdState(
+      bookmark.chapterId
+    );
+
+    await load(targetAudio, {
+      preserveTime: false,
+      startAt: bookmark.timestamp,
+      autoplay: true,
+    });
   };
 
   return {
@@ -403,18 +632,25 @@ export function usePlayer() {
     selectedVoiceId,
     selectedChapterId,
     currentChapter,
-    setSelectedBookId: selectBook,
-    setSelectedVoiceId: selectVoice,
-    setSelectedChapterId: selectChapter,
-    isReady,
+    setSelectedBookId,
+    setSelectedVoiceId,
+    setSelectedChapterId,
     isPlaying,
-    isLoadingAudio: false,
-    currentTime,
+    isLoadingAudio: !isReady,
+    currentTime: displayTime,
     duration,
-    formattedCurrentTime: formatTime(currentTime),
-    formattedDuration: formatTime(duration),
+    formattedCurrentTime:
+      formatTime(displayTime),
+    formattedDuration:
+      formatTime(duration),
+    playbackRate,
+    setPlaybackRate,
     togglePlay,
     handleSeek,
+    handleSliderChange,
     restart,
+    createBookmark,
+    jumpToBookmark,
+    audioRef,
   };
 }

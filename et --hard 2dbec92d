@@ -1,0 +1,30 @@
+[33m4e33acd8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to 4e33acd8
+[33ma519e774[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{1}: reset: moving to a519e774
+[33ma519e774[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{2}: checkout: moving from 0118b7f7919bab1e7915e177aeb2e7828ead8de2 to main
+[33m0118b7f7[m HEAD@{3}: commit: stable prepared audio pipeline + dracula chapter rebuild
+[33m2dbec92d[m HEAD@{4}: commit: fix seek starts from selected time
+[33m2dc6589a[m HEAD@{5}: commit: fix final slider seek architecture
+[33m6f73a51e[m HEAD@{6}: commit: Implement enhanced audio seeking functionality with clamping and improved state management for slider interactions
+[33m084de787[m HEAD@{7}: commit: fix slider seek repetition
+[33mc907e540[m HEAD@{8}: commit: fix playback repetition
+[33m97aa8b28[m HEAD@{9}: commit: Enhance audio playback control with improved seeking and autoplay options across components
+[33ma1aa88f5[m[33m ([m[1;32mstable-desktop-playback[m[33m, [m[1;32mbackup-current-state[m[33m)[m HEAD@{10}: checkout: moving from 2f8e4a9558aa8921b2d949f7c703640f8be639e4 to a1aa88f5
+[33m2f8e4a95[m HEAD@{11}: checkout: moving from a519e774bd2fe6d1fb7d054849e58ba07372107f to 2f8e4a95
+[33ma519e774[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{12}: checkout: moving from 4dff6a22d6c4c232ce9e7e6061e49e7a250b43ad to a519e774
+[33m4dff6a22[m[33m ([m[1;32mstable-audio-baseline[m[33m, [m[1;32mdracula-audio-fix[m[33m)[m HEAD@{13}: checkout: moving from dracula-chunk-integration to 4dff6a22
+[33m94d645ca[m[33m ([m[1;32mdracula-chunk-integration[m[33m)[m HEAD@{14}: commit: stable baseline before dracula coordinator integration
+[33m4dff6a22[m[33m ([m[1;32mstable-audio-baseline[m[33m, [m[1;32mdracula-audio-fix[m[33m)[m HEAD@{15}: checkout: moving from dracula-audio-fix to dracula-chunk-integration
+[33m4dff6a22[m[33m ([m[1;32mstable-audio-baseline[m[33m, [m[1;32mdracula-audio-fix[m[33m)[m HEAD@{16}: checkout: moving from stable-audio-baseline to dracula-audio-fix
+[33m4dff6a22[m[33m ([m[1;32mstable-audio-baseline[m[33m, [m[1;32mdracula-audio-fix[m[33m)[m HEAD@{17}: checkout: moving from 4dff6a22d6c4c232ce9e7e6061e49e7a250b43ad to stable-audio-baseline
+[33m4dff6a22[m[33m ([m[1;32mstable-audio-baseline[m[33m, [m[1;32mdracula-audio-fix[m[33m)[m HEAD@{18}: checkout: moving from stable-desktop-playback to 4dff6a22
+[33ma1aa88f5[m[33m ([m[1;32mstable-desktop-playback[m[33m, [m[1;32mbackup-current-state[m[33m)[m HEAD@{19}: reset: moving to a1aa88f5
+[33ma1aa88f5[m[33m ([m[1;32mstable-desktop-playback[m[33m, [m[1;32mbackup-current-state[m[33m)[m HEAD@{20}: reset: moving to a1aa88f5
+[33ma1aa88f5[m[33m ([m[1;32mstable-desktop-playback[m[33m, [m[1;32mbackup-current-state[m[33m)[m HEAD@{21}: commit: stable retention foundation and playback systems
+[33m2f8e4a95[m HEAD@{22}: commit: add retention systems and continue listening
+[33m4dff6a22[m[33m ([m[1;32mstable-audio-baseline[m[33m, [m[1;32mdracula-audio-fix[m[33m)[m HEAD@{23}: commit: stable real voice switching
+[33mddb21ad8[m HEAD@{24}: commit: stable real voice switching
+[33m6dc2f54e[m HEAD@{25}: commit: stable prepared audio pipeline
+[33m650dfe09[m HEAD@{26}: commit: stable dracula cache pipeline
+[33m801ce2f2[m HEAD@{27}: commit: stable dracula chunk pipeline
+[33m901e8d51[m HEAD@{28}: commit: stable dracula generator setup
+[33m8d633a66[m HEAD@{29}: commit: stable prepared audio pipeline

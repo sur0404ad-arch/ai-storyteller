@@ -1,3 +1,5 @@
 .next
 node_modules
 .vercel
+public/audio/
+public/**/*.mp3

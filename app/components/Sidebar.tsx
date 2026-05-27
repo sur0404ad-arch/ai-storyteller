@@ -1,20 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+type SidebarBook = {
+  id: number;
+  title: string;
+  author: string;
+  access?: "free" | "premium";
+};
 
 type Props = {
-  books: {
-    id: number;
-    title: string;
-    author: string;
-    access?: "free" | "premium";
-  }[];
-
+  books: SidebarBook[];
   selectedBookId: string;
   searchValue: string;
   onSearchChange: (value: string) => void;
   onSelectBook: (bookId: string | number) => void;
 };
+
+const FALLBACK_LIBRARY: SidebarBook[] = [
+  {
+    id: 1,
+    title: "Sherlock Holmes",
+    author: "Arthur Conan Doyle",
+    access: "free",
+  },
+  {
+    id: 2,
+    title: "Dracula",
+    author: "Bram Stoker",
+    access: "free",
+  },
+];
 
 const PREMIUM_BOOKS = [
   { title: "Harry Potter", author: "J.K. Rowling" },
@@ -32,6 +48,33 @@ export default function Sidebar({
 }: Props) {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [premiumMessage, setPremiumMessage] = useState(false);
+
+  const visibleBooks = useMemo(() => {
+    const incomingBooks = Array.isArray(books) ? books : [];
+    const mergedBooks: SidebarBook[] = [];
+
+    [...incomingBooks, ...FALLBACK_LIBRARY].forEach((book) => {
+      const exists = mergedBooks.some(
+        (item) =>
+          String(item.id) === String(book.id) ||
+          item.title.toLowerCase().trim() === book.title.toLowerCase().trim()
+      );
+
+      if (!exists) {
+        mergedBooks.push(book);
+      }
+    });
+
+    const query = searchValue.toLowerCase().trim();
+
+    if (!query) return mergedBooks;
+
+    return mergedBooks.filter(
+      (book) =>
+        book.title.toLowerCase().includes(query) ||
+        book.author.toLowerCase().includes(query)
+    );
+  }, [books, searchValue]);
 
   function openPremiumModal() {
     setPremiumMessage(false);
@@ -58,7 +101,7 @@ export default function Sidebar({
         <div className="mb-4 flex items-center rounded-[1.6rem] border border-white/10 bg-white/[0.025] px-4 py-3 lg:rounded-3xl">
           <input
             value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search stories..."
             className="w-full bg-transparent text-base text-white outline-none placeholder:text-white/35 lg:text-sm"
           />
@@ -71,20 +114,23 @@ export default function Sidebar({
             Free Library
           </p>
 
-          <p className="text-[10px] text-white/40">{books.length} books</p>
+          <p className="text-[10px] text-white/40">
+            {visibleBooks.length} books
+          </p>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {books.length > 0 ? (
+        {visibleBooks.length > 0 ? (
           <>
             <div className="space-y-2.5 lg:space-y-3">
-              {books.map((book) => {
+              {visibleBooks.map((book) => {
                 const active = selectedBookId === String(book.id);
 
                 return (
                   <button
-                    key={book.id}
+                    key={`${book.id}-${book.title}`}
+                    type="button"
                     onClick={() => onSelectBook(book.id)}
                     className={`group w-full rounded-[1.35rem] border px-4 py-3 text-left transition-all duration-300 lg:rounded-[1.45rem] ${
                       active
@@ -104,7 +150,7 @@ export default function Sidebar({
                       </div>
 
                       <div className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] text-white/55">
-                        Free
+                        {book.access === "premium" ? "Premium" : "Free"}
                       </div>
                     </div>
                   </button>
@@ -127,6 +173,7 @@ export default function Sidebar({
                 {PREMIUM_BOOKS.map((book) => (
                   <button
                     key={book.title}
+                    type="button"
                     onClick={openPremiumModal}
                     className="group relative w-full overflow-hidden rounded-[1.3rem] border border-yellow-300/10 bg-yellow-500/[0.04] px-4 py-3 text-left opacity-80 transition hover:border-yellow-300/25 hover:bg-yellow-500/[0.08] lg:rounded-[1.4rem]"
                   >
@@ -152,6 +199,7 @@ export default function Sidebar({
               </div>
 
               <button
+                type="button"
                 onClick={openPremiumModal}
                 className="mt-4 w-full rounded-[1.25rem] bg-gradient-to-r from-orange-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-orange-950/30 transition hover:scale-[1.01] lg:rounded-2xl"
               >
@@ -217,6 +265,7 @@ export default function Sidebar({
             )}
 
             <button
+              type="button"
               onClick={handlePremiumClick}
               className="mt-5 w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-400 px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-orange-950/30 transition hover:scale-[1.01]"
             >
@@ -224,6 +273,7 @@ export default function Sidebar({
             </button>
 
             <button
+              type="button"
               onClick={() => setShowPremiumModal(false)}
               className="mt-3 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70 transition hover:bg-white/[0.08]"
             >

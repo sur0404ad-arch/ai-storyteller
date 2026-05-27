@@ -2,34 +2,149 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-let sharedAudio: HTMLAudioElement | null = null;
-let sharedSource = "";
+import { registerGlobalAudio } from "../lib/audio/audioController";
 
-function getSharedAudio() {
-  if (typeof window === "undefined") {
-    return null;
-  }
+const CURRENT_TIME_DIAG = true;
 
-  if (!sharedAudio) {
-    sharedAudio = new Audio();
-
-    sharedAudio.preload = "auto";
-    sharedAudio.setAttribute("playsinline", "true");
-    sharedAudio.setAttribute("webkit-playsinline", "true");
-  }
-
-  return sharedAudio;
+function diagStack(skip = 2) {
+  return new Error()
+    .stack?.split("\n")
+    .slice(skip, skip + 4)
+    .map((line) => line.trim())
+    .join(" | ") ?? "stack-unavailable";
 }
 
-function toAbsoluteUrl(src: string) {
-  return new URL(src, window.location.origin).toString();
+function diagLog(
+  kind: string,
+  source: string,
+  previousTime: number,
+  newTime: number,
+  extra?: Record<string, unknown>
+) {
+  if (!CURRENT_TIME_DIAG) {
+    return;
+  }
+
+  console.log("[currentTime-diag]", {
+    kind,
+    source,
+    previousTime,
+    newTime,
+    timestamp: Date.now(),
+    perfMs: Math.round(performance.now()),
+    stack: diagStack(3),
+    ...extra,
+  });
 }
 
-export function useAudioEngine(audioSrc?: string) {
+function clampPlaybackTime(time: number, duration: number) {
+  if (!Number.isFinite(time) || time <= 0) {
+    return 0;
+  }
+
+  if (duration > 0) {
+    return Math.min(Math.max(0, time), duration);
+  }
+
+  return Math.max(0, time);
+}
+
+function assignAudioCurrentTime(
+  audio: HTMLAudioElement,
+  newTime: number,
+  source: string,
+  extra?: Record<string, unknown>
+) {
+  const previousTime = Number.isFinite(audio.currentTime)
+    ? audio.currentTime
+    : 0;
+
+  diagLog("currentTime-write", source, previousTime, newTime, extra);
+  audio.currentTime = newTime;
+
+  return previousTime;
+}
+
+function waitForAudioSeeked(
+  audio: HTMLAudioElement,
+  targetTime: number,
+  source: string
+) {
+  const safeDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+  const safeTarget = clampPlaybackTime(targetTime, safeDuration);
+
+  diagLog(
+    "waitForAudioSeeked:enter",
+    source,
+    audio.currentTime,
+    safeTarget,
+    {
+      paused: audio.paused,
+      readyState: audio.readyState,
+    }
+  );
+
+  return new Promise<void>((resolve) => {
+    const epsilon = 0.25;
+
+    if (
+      audio.readyState >= 1 &&
+      Math.abs(audio.currentTime - safeTarget) < epsilon
+    ) {
+      diagLog(
+        "waitForAudioSeeked:skip-write",
+        source,
+        audio.currentTime,
+        safeTarget,
+        { reason: "already-at-target" }
+      );
+      resolve();
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      diagLog(
+        "waitForAudioSeeked:timeout",
+        source,
+        audio.currentTime,
+        safeTarget,
+        {}
+      );
+      resolve();
+    }, 3000);
+
+    const onSeeked = () => {
+      cleanup();
+      diagLog(
+        "seeked-event",
+        `${source}:waitForAudioSeeked`,
+        safeTarget,
+        audio.currentTime,
+        { paused: audio.paused }
+      );
+      resolve();
+    };
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      audio.removeEventListener("seeked", onSeeked);
+    };
+
+    audio.addEventListener("seeked", onSeeked, { once: true });
+    assignAudioCurrentTime(audio, safeTarget, `${source}:waitForAudioSeeked`);
+  });
+}
+
+export function useAudioEngine(initialSource = "") {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const isMountedRef = useRef(false);
-  const pendingPlayRef = useRef<Promise<void> | null>(null);
+  const sourceRef = useRef("");
+  const playbackRateRef = useRef(1);
+  const loadGenerationRef = useRef(0);
+
+  const lastTimeUpdateRef = useRef(0);
+  const lastTimeUpdateLogRef = useRef(0);
 
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -37,219 +152,412 @@ export function useAudioEngine(audioSrc?: string) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  const [playbackRate, setPlaybackRateState] = useState(1);
+
   useEffect(() => {
-    isMountedRef.current = true;
+    if (audioRef.current) return;
 
-    const audio = getSharedAudio();
+    const audio = new Audio();
+    audio.dataset.playbackId = `useAudioEngine-${Date.now()}`;
 
-    if (!audio) return;
+    diagLog("HTMLAudioElement:created", "mount-effect", 0, 0, {
+      elementId: audio.dataset.playbackId,
+      initialSource,
+    });
 
-    audioRef.current = audio;
+    audio.preload = "auto";
+    audio.crossOrigin = "anonymous";
+    audio.playbackRate = playbackRateRef.current;
+
+    audioRef.current = registerGlobalAudio(audio);
 
     const handleLoadedMetadata = () => {
-      if (!isMountedRef.current) return;
+      const safeDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
 
-      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+      setDuration(safeDuration);
       setIsReady(true);
     };
 
-    const handleDurationChange = () => {
-      if (!isMountedRef.current) return;
+    const handleCanPlay = () => {
+      setIsReady(true);
+    };
 
-      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    const handleSeeked = () => {
+      diagLog(
+        "seeked-event",
+        "mount-effect:listener",
+        lastTimeUpdateRef.current,
+        audio.currentTime,
+        { paused: audio.paused }
+      );
     };
 
     const handleTimeUpdate = () => {
-      if (!isMountedRef.current) return;
+      const previousTime = lastTimeUpdateRef.current;
+      const newTime = Number.isFinite(audio.currentTime)
+        ? audio.currentTime
+        : 0;
 
-      setCurrentTime(Number.isFinite(audio.currentTime) ? audio.currentTime : 0);
+      lastTimeUpdateRef.current = newTime;
+
+      const now = performance.now();
+      const backward = newTime + 0.05 < previousTime;
+      const throttled = now - lastTimeUpdateLogRef.current < 250;
+
+      if (!backward && throttled) {
+        return;
+      }
+
+      lastTimeUpdateLogRef.current = now;
+
+      diagLog("timeupdate-event", "mount-effect:listener", previousTime, newTime, {
+        backward,
+        paused: audio.paused,
+      });
+
+      setCurrentTime(newTime);
     };
 
     const handlePlay = () => {
-      if (!isMountedRef.current) return;
-
       setIsPlaying(true);
     };
 
     const handlePause = () => {
-      if (!isMountedRef.current) return;
-
       setIsPlaying(false);
     };
 
     const handleEnded = () => {
-      if (!isMountedRef.current) return;
-
       setIsPlaying(false);
+
+      const safeDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+
+      setCurrentTime(safeDuration);
     };
 
-    const handleCanPlay = () => {
-      if (!isMountedRef.current) return;
-
-      setIsReady(true);
+    const handleError = () => {
+      setIsReady(false);
+      setIsPlaying(false);
     };
 
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("durationchange", handleDurationChange);
+    audio.addEventListener("canplay", handleCanPlay);
+    audio.addEventListener("seeked", handleSeeked);
     audio.addEventListener("timeupdate", handleTimeUpdate);
-
     audio.addEventListener("play", handlePlay);
     audio.addEventListener("pause", handlePause);
     audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
 
-    audio.addEventListener("canplay", handleCanPlay);
-
-    setCurrentTime(audio.currentTime || 0);
-    setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
-    setIsPlaying(!audio.paused);
-    setIsReady(audio.readyState >= 1);
+    if (initialSource) {
+      sourceRef.current = initialSource;
+      audio.src = initialSource;
+    }
 
     return () => {
-      isMountedRef.current = false;
+      loadGenerationRef.current += 1;
+      audio.pause();
 
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("durationchange", handleDurationChange);
+      audio.removeEventListener("canplay", handleCanPlay);
+      audio.removeEventListener("seeked", handleSeeked);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
-
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
 
-      audio.removeEventListener("canplay", handleCanPlay);
+      audioRef.current = null;
     };
-  }, []);
+  }, [initialSource]);
 
-  const load = useCallback(async (src: string, startTime = 0) => {
-    const audio = audioRef.current;
+  const load = useCallback(
+    async (
+      nextSource: string,
+      options?: {
+        preserveTime?: boolean;
+        autoplay?: boolean;
+        startAt?: number;
+      }
+    ) => {
+      const audio = audioRef.current;
 
-    if (!audio || !src) return;
+      if (!audio || !nextSource) return;
 
-    const absoluteSrc = toAbsoluteUrl(src);
-    const sourceChanged = sharedSource !== absoluteSrc;
-    const safeStartTime = Math.max(0, startTime);
+      const loadGeneration = loadGenerationRef.current + 1;
+      loadGenerationRef.current = loadGeneration;
 
-    if (sourceChanged) {
-      audio.pause();
+      const preserveTime = options?.preserveTime ?? true;
+      const autoplay = options?.autoplay ?? false;
 
-      setIsReady(false);
-      setIsPlaying(false);
+      const previousTime = Number.isFinite(audio.currentTime)
+        ? audio.currentTime
+        : 0;
 
-      audio.src = absoluteSrc;
-      sharedSource = absoluteSrc;
-      audio.load();
+      const targetTime =
+        typeof options?.startAt === "number"
+          ? options.startAt
+          : preserveTime
+            ? previousTime
+            : 0;
 
-      await new Promise<void>((resolve) => {
-        const handleReady = () => {
-          audio.removeEventListener("loadedmetadata", handleReady);
-          resolve();
-        };
+      const sourceChanged =
+        sourceRef.current !== nextSource || !audio.src.includes(nextSource);
 
-        if (audio.readyState >= 1) {
-          resolve();
+      diagLog(
+        "restore:load:enter",
+        "load",
+        previousTime,
+        targetTime,
+        {
+          nextSource,
+          sourceChanged,
+          autoplay,
+          loadGeneration,
+        }
+      );
+
+      const playAfterSeek = async (time: number) => {
+        if (loadGeneration !== loadGenerationRef.current) {
           return;
         }
 
-        audio.addEventListener("loadedmetadata", handleReady, {
-          once: true,
-        });
-      });
+        diagLog(
+          "restore:playAfterSeek:enter",
+          "load:playAfterSeek",
+          audio.currentTime,
+          time,
+          { autoplay }
+        );
 
-      if (safeStartTime > 0) {
-        audio.currentTime = safeStartTime;
-      }
+        await waitForAudioSeeked(audio, time, "load:playAfterSeek");
 
-      setCurrentTime(audio.currentTime || 0);
-      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
-      setIsReady(true);
+        if (loadGeneration !== loadGenerationRef.current) {
+          return;
+        }
 
-      return;
-    }
+        setCurrentTime(
+          Number.isFinite(audio.currentTime) ? audio.currentTime : time
+        );
 
-    if (Math.abs(audio.currentTime - safeStartTime) > 0.5) {
-      audio.currentTime = safeStartTime;
-      setCurrentTime(safeStartTime);
-    }
-  }, []);
+        if (!autoplay || !audio.paused) {
+          return;
+        }
 
-  useEffect(() => {
-    if (!audioSrc) return;
-
-    load(audioSrc);
-  }, [audioSrc, load]);
-
-  const play = useCallback(
-    async (startTime?: number) => {
-      const audio = audioRef.current;
-
-      if (!audio || !audioSrc) return;
-
-      if (pendingPlayRef.current) {
-        return pendingPlayRef.current;
-      }
-
-      const execute = async () => {
         try {
-          const absoluteSrc = toAbsoluteUrl(audioSrc);
-
-          if (sharedSource !== absoluteSrc) {
-            await load(audioSrc, startTime || 0);
-          } else if (
-            typeof startTime === "number" &&
-            Number.isFinite(startTime)
-          ) {
-            const safeStartTime = Math.max(0, startTime);
-
-            if (Math.abs(audio.currentTime - safeStartTime) > 0.5) {
-              audio.currentTime = safeStartTime;
-              setCurrentTime(safeStartTime);
-            }
-          }
-
-          if (!audio.paused) return;
-
+          diagLog(
+            "resume:play()",
+            "load:playAfterSeek",
+            audio.currentTime,
+            audio.currentTime,
+            {}
+          );
           await audio.play();
-        } catch (error) {
-          console.error("Audio play error:", error);
-        } finally {
-          pendingPlayRef.current = null;
+          setIsPlaying(true);
+        } catch {
+          setIsPlaying(false);
         }
       };
 
-      pendingPlayRef.current = execute();
+      if (!sourceChanged) {
+        const safeDuration = Number.isFinite(audio.duration)
+          ? audio.duration
+          : 0;
 
-      return pendingPlayRef.current;
+        const safeTime = clampPlaybackTime(targetTime, safeDuration);
+
+        setCurrentTime(safeTime);
+        await playAfterSeek(safeTime);
+
+        return;
+      }
+
+      const wasPlaying = !audio.paused;
+
+      setIsReady(false);
+
+      sourceRef.current = nextSource;
+      audio.src = nextSource;
+      audio.playbackRate = playbackRateRef.current;
+
+      await new Promise<void>((resolve) => {
+        const cleanup = () => {
+          audio.removeEventListener("loadedmetadata", handleReady);
+          audio.removeEventListener("canplay", handleReady);
+          audio.removeEventListener("error", handleError);
+        };
+
+        const handleReady = () => {
+          if (loadGeneration !== loadGenerationRef.current) {
+            cleanup();
+            resolve();
+            return;
+          }
+
+          cleanup();
+
+          const safeDuration = Number.isFinite(audio.duration)
+            ? audio.duration
+            : 0;
+
+          const safeTime = clampPlaybackTime(targetTime, safeDuration);
+
+          setDuration(safeDuration);
+          setIsReady(true);
+          setCurrentTime(safeTime);
+
+          resolve();
+        };
+
+        const handleError = () => {
+          cleanup();
+
+          if (loadGeneration === loadGenerationRef.current) {
+            setIsReady(false);
+          }
+
+          resolve();
+        };
+
+        audio.addEventListener("loadedmetadata", handleReady, { once: true });
+        audio.addEventListener("canplay", handleReady, { once: true });
+        audio.addEventListener("error", handleError, { once: true });
+
+        audio.load();
+      });
+
+      if (loadGeneration !== loadGenerationRef.current) {
+        return;
+      }
+
+      const safeDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+      const safeTime = clampPlaybackTime(targetTime, safeDuration);
+
+      const shouldPlay = autoplay || wasPlaying;
+
+      diagLog(
+        "restore:load:post-metadata",
+        "load:source-changed",
+        audio.currentTime,
+        safeTime,
+        { shouldPlay }
+      );
+
+      await waitForAudioSeeked(audio, safeTime, "load:source-changed");
+
+      if (loadGeneration !== loadGenerationRef.current) {
+        return;
+      }
+
+      setCurrentTime(
+        Number.isFinite(audio.currentTime) ? audio.currentTime : safeTime
+      );
+
+      if (!shouldPlay) {
+        return;
+      }
+
+      try {
+        diagLog(
+          "resume:play()",
+          "load:shouldPlay",
+          audio.currentTime,
+          audio.currentTime,
+          {}
+        );
+        await audio.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
     },
-    [audioSrc, load]
+    []
   );
 
-  const pause = useCallback(() => {
-    const audio = audioRef.current;
-
-    if (!audio || audio.paused) return;
-
-    audio.pause();
-  }, []);
-
-  const seek = useCallback((time: number) => {
+  const play = useCallback(async (position?: number) => {
     const audio = audioRef.current;
 
     if (!audio) return;
 
-    const safeTime = Math.max(0, time);
+    audio.playbackRate = playbackRateRef.current;
 
-    audio.currentTime = safeTime;
-    setCurrentTime(safeTime);
+    if (typeof position === "number" && Number.isFinite(position)) {
+      await waitForAudioSeeked(audio, position, "play:position");
+      setCurrentTime(
+        Number.isFinite(audio.currentTime) ? audio.currentTime : position
+      );
+    }
+
+    try {
+      await audio.play();
+      setIsPlaying(true);
+    } catch {
+      setIsPlaying(false);
+    }
+  }, []);
+
+  const pause = useCallback(() => {
+    const audio = audioRef.current;
+
+    if (!audio) return;
+
+    audio.pause();
+    setIsPlaying(false);
+  }, []);
+
+  const seek = useCallback(async (value: number) => {
+    const audio = audioRef.current;
+
+    if (!audio || !Number.isFinite(value)) return;
+
+    loadGenerationRef.current += 1;
+
+    const safeDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+
+    const safeValue = clampPlaybackTime(value, safeDuration);
+
+    const beforeSeek = audio.currentTime;
+
+    diagLog("seek():enter", "seek", beforeSeek, safeValue, {
+      requested: value,
+      paused: audio.paused,
+      loadGeneration: loadGenerationRef.current,
+    });
+
+    await waitForAudioSeeked(audio, safeValue, "seek");
+
+    diagLog("seek():exit", "seek", beforeSeek, audio.currentTime, {
+      requested: value,
+      safeValue,
+      paused: audio.paused,
+    });
+
+    setCurrentTime(
+      Number.isFinite(audio.currentTime) ? audio.currentTime : safeValue
+    );
+  }, []);
+
+  const setPlaybackRate = useCallback((value: number) => {
+    const safeRate = [0.75, 1, 1.25, 1.5].includes(value) ? value : 1;
+
+    playbackRateRef.current = safeRate;
+
+    const audio = audioRef.current;
+
+    if (audio) {
+      audio.playbackRate = safeRate;
+    }
+
+    setPlaybackRateState(safeRate);
   }, []);
 
   return {
     audioRef,
-
     isReady,
     isPlaying,
-
     currentTime,
     duration,
-
+    playbackRate,
+    setPlaybackRate,
     play,
     pause,
     seek,
